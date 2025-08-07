@@ -1,0 +1,16 @@
+[project]
+project_id = "daoitanpcvhmwyzrqery"
+
+[database]
+port = 54322
+
+[api]
+port = 54321
+
+[auth]
+enabled = true
+external_apple_enabled = true
+external_google_enabled = true
+
+[studio]
+port = 54323

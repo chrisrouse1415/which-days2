@@ -1,0 +1,277 @@
+milestones:
+  M0:
+    name: "Foundation & Auth"
+    duration: "1-2 days"
+    description: "Project setup, authentication, basic plan creation"
+  
+  M1:
+    name: "Participant Experience"
+    duration: "2-3 days"
+    description: "Join flow, availability toggles, undo mechanism, live results"
+  
+  M2:
+    name: "Owner Management"
+    duration: "2 days"
+    description: "Date management, Force Reopen, plan lifecycle controls"
+  
+  M3:
+    name: "UI/UX Polish"
+    duration: "2 days"
+    description: "Ranking algorithms, empty states, mobile optimization"
+  
+  M4:
+    name: "Operations & Monitoring"
+    duration: "1 day"
+    description: "Metrics, logging, backups, rate limiting, deployment"
+
+tickets:
+  T-001:
+    milestone: M0
+    summary: "Project setup and initial infrastructure"
+    acceptance_criteria:
+      - "Next.js PWA project initialized on Vercel"
+      - "Supabase database and auth configured"
+      - "Basic deployment pipeline working"
+      - "Environment variables and secrets management"
+    dependencies: []
+    estimated_hours: 8
+    files_to_touch:
+      - "package.json"
+      - "next.config.js"
+      - ".env.local"
+      - "supabase/config.toml"
+      - "lib/supabase.ts"
+
+  T-002:
+    milestone: M0
+    summary: "Owner authentication with Google/Apple OAuth"
+    acceptance_criteria:
+      - "Google OAuth integration working"
+      - "Apple Sign-In integration working"
+      - "User session management"
+      - "Protected routes for owner actions"
+    dependencies: ["T-001"]
+    estimated_hours: 6
+    files_to_touch:
+      - "pages/api/auth/[...nextauth].js"
+      - "lib/auth.ts"
+      - "components/LoginButton.tsx"
+      - "middleware.ts"
+
+  T-003:
+    milestone: M0
+    summary: "Plan creation and quota management"
+    acceptance_criteria:
+      - "Owner can create plan with title and dates"
+      - "Maximum 3 active plans enforced"
+      - "Plan creation blocked when quota exceeded"
+      - "Share link and manage link generated"
+    dependencies: ["T-002"]
+    estimated_hours: 10
+    files_to_touch:
+      - "pages/create.tsx"
+      - "pages/api/plans/create.ts"
+      - "lib/quota.ts"
+      - "components/PlanForm.tsx"
+      - "supabase/migrations/001_initial_schema.sql"
+
+  T-004:
+    milestone: M0
+    summary: "Database schema and RLS policies"
+    acceptance_criteria:
+      - "Plans, PlanDates, Participants, Availability tables created"
+      - "Event log table for audit trail"
+      - "RLS policies for participant/owner access control"
+      - "Database indexes for performance"
+    dependencies: ["T-001"]
+    estimated_hours: 8
+    files_to_touch:
+      - "supabase/migrations/001_initial_schema.sql"
+      - "supabase/migrations/002_rls_policies.sql"
+      - "lib/database.types.ts"
+
+  T-005:
+    milestone: M1
+    summary: "Participant join flow (no auth required)"
+    acceptance_criteria:
+      - "Join via share link works"
+      - "Display name entry and validation"
+      - "Participant record created in database"
+      - "Access to plan availability interface"
+    dependencies: ["T-003", "T-004"]
+    estimated_hours: 6
+    files_to_touch:
+      - "pages/plan/[shareId].tsx"
+      - "pages/api/participants/join.ts"
+      - "components/JoinForm.tsx"
+      - "lib/participants.ts"
+
+  T-006:
+    milestone: M1
+    summary: "Availability toggle system"
+    acceptance_criteria:
+      - "Toggle can't-do status for each date"
+      - "Global elimination on first can't-do mark"
+      - "Real-time updates for all participants"
+      - "Optimistic UI updates"
+    dependencies: ["T-005"]
+    estimated_hours: 12
+    files_to_touch:
+      - "components/AvailabilityToggle.tsx"
+      - "pages/api/availability/toggle.ts"
+      - "lib/availability.ts"
+      - "hooks/useRealtimeUpdates.ts"
+
+  T-007:
+    milestone: M1
+    summary: "30-second undo mechanism"
+    acceptance_criteria:
+      - "Undo available for 30s after marking can't-do"
+      - "Only actor can undo their own mark"
+      - "Undo deadline returned with toggle response"
+      - "Timer UI shows remaining undo time"
+    dependencies: ["T-006"]
+    estimated_hours: 8
+    files_to_touch:
+      - "pages/api/availability/undo.ts"
+      - "components/UndoTimer.tsx"
+      - "lib/undo.ts"
+
+  T-008:
+    milestone: M1
+    summary: "Participant 'done' status and live summaries"
+    acceptance_criteria:
+      - "I'm done button toggles completion status"
+      - "Live results show viable-for-all dates"
+      - "Eliminated/locked dates crossed out"
+      - "Edit allowed after marking done"
+    dependencies: ["T-007"]
+    estimated_hours: 10
+    files_to_touch:
+      - "components/DoneButton.tsx"
+      - "components/LiveResults.tsx"
+      - "pages/api/participants/done.ts"
+      - "lib/summaries.ts"
+
+  T-009:
+    milestone: M2
+    summary: "Owner dashboard and plan management"
+    acceptance_criteria:
+      - "Results matrix view for owners"
+      - "Add/remove dates functionality"
+      - "Quota indicator (X/3 active plans)"
+      - "Plan lock/delete controls"
+    dependencies: ["T-008"]
+    estimated_hours: 12
+    files_to_touch:
+      - "pages/dashboard.tsx"
+      - "pages/manage/[planId].tsx"
+      - "components/ResultsMatrix.tsx"
+      - "pages/api/plans/manage.ts"
+
+  T-010:
+    milestone: M2
+    summary: "Force Reopen functionality"
+    acceptance_criteria:
+      - "Owner can Force Reopen eliminated dates"
+      - "Date status changes to 'reopened vN'"
+      - "Needs Review banner for completed participants"
+      - "Audit trail of reopen actions"
+    dependencies: ["T-009"]
+    estimated_hours: 10
+    files_to_touch:
+      - "pages/api/plans/force-reopen.ts"
+      - "components/ForceReopenButton.tsx"
+      - "components/NeedsReviewBanner.tsx"
+      - "lib/force-reopen.ts"
+
+  T-011:
+    milestone: M3
+    summary: "Works-for-most ranking algorithm"
+    acceptance_criteria:
+      - "Dates sorted by availability count"
+      - "Clear indication of participant counts"
+      - "Visual hierarchy in results display"
+      - "Performance optimized for large participant counts"
+    dependencies: ["T-010"]
+    estimated_hours: 6
+    files_to_touch:
+      - "lib/ranking.ts"
+      - "components/RankedResults.tsx"
+
+  T-012:
+    milestone: M3
+    summary: "Empty states and error handling"
+    acceptance_criteria:
+      - "Empty states for no dates, no participants"
+      - "Loading states during async operations"
+      - "Error boundaries and user-friendly error messages"
+      - "Graceful handling of network failures"
+    dependencies: ["T-011"]
+    estimated_hours: 8
+    files_to_touch:
+      - "components/EmptyStates.tsx"
+      - "components/ErrorBoundary.tsx"
+      - "components/LoadingSpinner.tsx"
+      - "lib/error-handling.ts"
+
+  T-013:
+    milestone: M3
+    summary: "Mobile optimization and accessibility"
+    acceptance_criteria:
+      - "Responsive design for mobile devices"
+      - "Touch-friendly interactive elements"
+      - "WCAG 2.1 AA compliance basics"
+      - "Keyboard navigation support"
+    dependencies: ["T-012"]
+    estimated_hours: 10
+    files_to_touch:
+      - "styles/globals.css"
+      - "components/MobileNavigation.tsx"
+      - "lib/accessibility.ts"
+
+  T-014:
+    milestone: M4
+    summary: "Metrics and observability"
+    acceptance_criteria:
+      - "Key metrics tracked (plans_created, responses_saved, etc.)"
+      - "Structured logging for important events"
+      - "Simple monitoring dashboard"
+      - "Performance monitoring setup"
+    dependencies: ["T-013"]
+    estimated_hours: 6
+    files_to_touch:
+      - "lib/metrics.ts"
+      - "lib/logging.ts"
+      - "pages/api/admin/metrics.ts"
+
+  T-015:
+    milestone: M4
+    summary: "Rate limiting and abuse prevention"
+    acceptance_criteria:
+      - "Rate limits per IP and participant"
+      - "CAPTCHA integration for suspicious activity"
+      - "Abuse detection algorithms"
+      - "Admin controls for blocking/unblocking"
+    dependencies: ["T-014"]
+    estimated_hours: 8
+    files_to_touch:
+      - "lib/rate-limiting.ts"
+      - "lib/abuse-detection.ts"
+      - "pages/api/captcha/verify.ts"
+      - "middleware/rate-limit.ts"
+
+  T-016:
+    milestone: M4
+    summary: "Backup and deployment automation"
+    acceptance_criteria:
+      - "Daily automated database backups"
+      - "Deployment pipeline with proper testing"
+      - "Environment promotion process"
+      - "Basic runbook for operations"
+    dependencies: ["T-015"]
+    estimated_hours: 4
+    files_to_touch:
+      - ".github/workflows/deploy.yml"
+      - "scripts/backup.sh"
+      - "docs/RUNBOOK.md"
