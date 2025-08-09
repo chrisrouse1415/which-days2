@@ -44,19 +44,20 @@ tickets:
 
   T-002:
     milestone: M0
-    summary: "Owner authentication with Google/Apple OAuth"
+    summary: "Owner authentication with Clerk (Google/Apple OAuth)"
     acceptance_criteria:
-      - "Google OAuth integration working"
-      - "Apple Sign-In integration working"
-      - "User session management"
+      - "Clerk authentication components integrated"
+      - "Google OAuth working through Clerk"
+      - "Apple Sign-In working through Clerk"
       - "Protected routes for owner actions"
+      - "User webhook sync to Supabase configured"
     dependencies: ["T-001"]
-    estimated_hours: 6
+    estimated_hours: 4
     files_to_touch:
-      - "pages/api/auth/[...nextauth].js"
-      - "lib/auth.ts"
+      - "lib/clerk.ts"
       - "components/LoginButton.tsx"
       - "middleware.ts"
+      - "pages/api/webhooks/clerk.ts"
 
   T-003:
     milestone: M0
@@ -81,13 +82,15 @@ tickets:
     acceptance_criteria:
       - "Plans, PlanDates, Participants, Availability tables created"
       - "Event log table for audit trail"
-      - "RLS policies for participant/owner access control"
+      - "RLS policies for participant/owner access control (Clerk user IDs)"
       - "Database indexes for performance"
+      - "User sync table for Clerk webhook data"
     dependencies: ["T-001"]
     estimated_hours: 8
     files_to_touch:
       - "supabase/migrations/001_initial_schema.sql"
       - "supabase/migrations/002_rls_policies.sql"
+      - "supabase/migrations/003_clerk_user_sync.sql"
       - "lib/database.types.ts"
 
   T-005:
