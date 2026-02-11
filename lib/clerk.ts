@@ -1,8 +1,9 @@
-import { auth, clerkClient } from '@clerk/nextjs/server'
-import { supabase } from './supabase'
+import { getAuth, clerkClient } from '@clerk/nextjs/server'
+import { supabaseAdmin } from './supabase-admin'
+import type { NextApiRequest } from 'next'
 
 export async function syncUserToSupabase(userId: string, userData: any) {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('users')
     .upsert({
       clerk_id: userId,
@@ -21,8 +22,8 @@ export async function syncUserToSupabase(userId: string, userData: any) {
   return data
 }
 
-export async function getCurrentUser() {
-  const { userId } = await auth()
+export async function getCurrentUser(req: NextApiRequest) {
+  const { userId } = getAuth(req)
 
   if (!userId) {
     return null
@@ -38,8 +39,8 @@ export async function getCurrentUser() {
   }
 }
 
-export async function requireAuth() {
-  const { userId } = await auth()
+export async function requireAuth(req: NextApiRequest): Promise<string> {
+  const { userId } = getAuth(req)
 
   if (!userId) {
     throw new Error('Authentication required')
