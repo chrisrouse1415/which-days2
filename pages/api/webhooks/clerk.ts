@@ -1,5 +1,4 @@
 import { Webhook } from 'svix'
-import { headers } from 'next/headers'
 import { WebhookEvent } from '@clerk/nextjs/server'
 import { syncUserToSupabase } from '../../../lib/clerk'
 import { NextApiRequest, NextApiResponse } from 'next'
@@ -9,11 +8,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ message: 'Method not allowed' })
   }
 
-  // Get the headers
-  const headersList = headers()
-  const svix_id = headersList.get('svix-id')
-  const svix_timestamp = headersList.get('svix-timestamp')
-  const svix_signature = headersList.get('svix-signature')
+  // Get the headers from the request object (Pages Router)
+  const svix_id = req.headers['svix-id'] as string | undefined
+  const svix_timestamp = req.headers['svix-timestamp'] as string | undefined
+  const svix_signature = req.headers['svix-signature'] as string | undefined
 
   // If there are no headers, error out
   if (!svix_id || !svix_timestamp || !svix_signature) {
@@ -40,7 +38,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   // Handle the webhook
-  const { id, type } = evt
   const eventType = evt.type
 
   if (eventType === 'user.created' || eventType === 'user.updated') {

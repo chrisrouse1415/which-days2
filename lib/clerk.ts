@@ -1,4 +1,4 @@
-import { auth, clerkClient } from '@clerk/nextjs'
+import { auth, clerkClient } from '@clerk/nextjs/server'
 import { supabase } from './supabase'
 
 export async function syncUserToSupabase(userId: string, userData: any) {
@@ -12,24 +12,25 @@ export async function syncUserToSupabase(userId: string, userData: any) {
       updated_at: new Date().toISOString()
     })
     .select()
-  
+
   if (error) {
     console.error('Error syncing user to Supabase:', error)
     throw error
   }
-  
+
   return data
 }
 
 export async function getCurrentUser() {
-  const { userId } = auth()
-  
+  const { userId } = await auth()
+
   if (!userId) {
     return null
   }
-  
+
   try {
-    const user = await clerkClient.users.getUser(userId)
+    const client = await clerkClient()
+    const user = await client.users.getUser(userId)
     return user
   } catch (error) {
     console.error('Error fetching user from Clerk:', error)
@@ -38,11 +39,11 @@ export async function getCurrentUser() {
 }
 
 export async function requireAuth() {
-  const { userId } = auth()
-  
+  const { userId } = await auth()
+
   if (!userId) {
     throw new Error('Authentication required')
   }
-  
+
   return userId
 }
