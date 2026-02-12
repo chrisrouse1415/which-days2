@@ -1,5 +1,6 @@
 import { supabaseAdmin } from './supabase-admin'
 import { ParticipantNotFoundError, PlanNotActiveError } from './participants'
+import { logger } from './logger'
 
 export class UndoExpiredError extends Error {
   constructor(message = 'Undo window has expired') {
@@ -85,7 +86,7 @@ export async function toggleUnavailable(participantId: string, planDateId: strin
     .single()
 
   if (upsertErr) {
-    console.error('Error upserting availability:', upsertErr)
+    logger.error('Error upserting availability', { participantId, planDateId }, upsertErr)
     throw upsertErr
   }
 
@@ -96,7 +97,7 @@ export async function toggleUnavailable(participantId: string, planDateId: strin
     .eq('id', planDateId)
 
   if (dateUpdateErr) {
-    console.error('Error updating date status:', dateUpdateErr)
+    logger.error('Error updating date status', { participantId, planDateId }, dateUpdateErr)
     throw dateUpdateErr
   }
 
@@ -116,7 +117,7 @@ export async function toggleUnavailable(participantId: string, planDateId: strin
     .single()
 
   if (logErr) {
-    console.error('Error inserting event log:', logErr)
+    logger.error('Error inserting event log', { participantId, planDateId }, logErr)
     throw logErr
   }
 
@@ -166,7 +167,7 @@ export async function undoUnavailable(participantId: string, eventLogId: string)
     .single()
 
   if (availErr) {
-    console.error('Error reverting availability:', availErr)
+    logger.error('Error reverting availability', { participantId, planDateId }, availErr)
     throw availErr
   }
 
@@ -178,7 +179,7 @@ export async function undoUnavailable(participantId: string, eventLogId: string)
     .eq('status', 'unavailable')
 
   if (countErr) {
-    console.error('Error counting unavailable marks:', countErr)
+    logger.error('Error counting unavailable marks', { participantId, planDateId }, countErr)
     throw countErr
   }
 
@@ -192,7 +193,7 @@ export async function undoUnavailable(participantId: string, eventLogId: string)
       .eq('id', planDateId)
 
     if (dateUpdateErr) {
-      console.error('Error restoring date status:', dateUpdateErr)
+      logger.error('Error restoring date status', { participantId, planDateId }, dateUpdateErr)
       throw dateUpdateErr
     }
   }
@@ -214,7 +215,7 @@ export async function getParticipantAvailability(participantId: string, planId: 
     .eq('plan_id', planId)
 
   if (pdErr) {
-    console.error('Error fetching plan dates:', pdErr)
+    logger.error('Error fetching plan dates', { participantId, planId }, pdErr)
     throw pdErr
   }
 
@@ -228,7 +229,7 @@ export async function getParticipantAvailability(participantId: string, planId: 
     .in('plan_date_id', dateIds)
 
   if (error) {
-    console.error('Error fetching availability:', error)
+    logger.error('Error fetching availability', { participantId, planId }, error)
     throw error
   }
 
@@ -244,7 +245,7 @@ export async function getPlanAvailabilitySummary(planId: string) {
     .order('date', { ascending: true })
 
   if (pdErr) {
-    console.error('Error fetching plan dates:', pdErr)
+    logger.error('Error fetching plan dates for summary', { planId }, pdErr)
     throw pdErr
   }
 
@@ -260,7 +261,7 @@ export async function getPlanAvailabilitySummary(planId: string) {
     .eq('status', 'unavailable')
 
   if (availErr) {
-    console.error('Error fetching availability summary:', availErr)
+    logger.error('Error fetching availability summary', { planId }, availErr)
     throw availErr
   }
 

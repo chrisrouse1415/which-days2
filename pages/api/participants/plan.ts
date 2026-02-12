@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { getPlanByShareId, PlanNotFoundError } from '../../../lib/participants'
 import { getParticipantAvailability, getPlanAvailabilitySummary } from '../../../lib/availability'
+import { logger } from '../../../lib/logger'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
@@ -45,7 +46,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(404).json({ error: error.message })
     }
 
-    console.error('Unexpected error fetching plan:', error)
+    logger.error('Unexpected error fetching plan', { route: 'participants/plan', shareId: req.query.shareId as string }, error)
     return res.status(500).json({ error: 'Internal server error' })
   }
 }

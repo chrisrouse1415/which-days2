@@ -1,4 +1,5 @@
 import { supabaseAdmin } from './supabase-admin'
+import { logger } from './logger'
 
 const MAX_ACTIVE_PLANS = 3
 
@@ -10,7 +11,7 @@ export async function getActivePlanCount(ownerClerkId: string): Promise<number> 
     .eq('status', 'active')
 
   if (error) {
-    console.error('Error counting active plans:', error)
+    logger.error('Error counting active plans', { userId: ownerClerkId }, error)
     throw error
   }
 

@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { toggleDone, ParticipantNotFoundError, PlanNotActiveError } from '../../../lib/participants'
+import { logger } from '../../../lib/logger'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -24,7 +25,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(410).json({ error: error.message })
     }
 
-    console.error('Unexpected error toggling done:', error)
+    logger.error('Unexpected error toggling done', { route: 'participants/done', participantId: req.body?.participantId }, error)
     return res.status(500).json({ error: 'Internal server error' })
   }
 }

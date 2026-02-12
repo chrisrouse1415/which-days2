@@ -1,5 +1,6 @@
 import { getAuth, clerkClient } from '@clerk/nextjs/server'
 import { supabaseAdmin } from './supabase-admin'
+import { logger } from './logger'
 import type { NextApiRequest } from 'next'
 
 export async function syncUserToSupabase(userId: string, userData: any) {
@@ -15,7 +16,7 @@ export async function syncUserToSupabase(userId: string, userData: any) {
     .select()
 
   if (error) {
-    console.error('Error syncing user to Supabase:', error)
+    logger.error('Error syncing user to Supabase', { userId }, error)
     throw error
   }
 
@@ -34,7 +35,7 @@ export async function getCurrentUser(req: NextApiRequest) {
     const user = await client.users.getUser(userId)
     return user
   } catch (error) {
-    console.error('Error fetching user from Clerk:', error)
+    logger.error('Error fetching user from Clerk', { userId }, error)
     return null
   }
 }

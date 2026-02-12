@@ -1,6 +1,7 @@
 import { Webhook } from 'svix'
 import { WebhookEvent } from '@clerk/nextjs/server'
 import { syncUserToSupabase } from '../../../lib/clerk'
+import { logger } from '../../../lib/logger'
 import { NextApiRequest, NextApiResponse } from 'next'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -33,7 +34,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       'svix-signature': svix_signature,
     }) as WebhookEvent
   } catch (err) {
-    console.error('Error verifying webhook:', err)
+    logger.error('Error verifying webhook', { route: 'webhooks/clerk' }, err)
     return res.status(400).json({ error: 'Error occurred' })
   }
 
@@ -43,9 +44,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (eventType === 'user.created' || eventType === 'user.updated') {
     try {
       await syncUserToSupabase(evt.data.id, evt.data)
-      console.log(`User ${evt.data.id} synced to Supabase`)
+      logger.info('User synced to Supabase', { route: 'webhooks/clerk', userId: evt.data.id })
     } catch (error) {
-      console.error('Error syncing user to Supabase:', error)
+      logger.error('Error syncing user to Supabase', { route: 'webhooks/clerk', userId: evt.data.id }, error)
       return res.status(500).json({ error: 'Error syncing user' })
     }
   }

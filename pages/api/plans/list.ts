@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { requireAuth } from '../../../lib/clerk'
 import { getOwnerPlans } from '../../../lib/plans'
+import { logger } from '../../../lib/logger'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
@@ -17,7 +18,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(401).json({ error: 'Authentication required' })
     }
 
-    console.error('Unexpected error listing plans:', error)
+    logger.error('Unexpected error listing plans', { route: 'plans/list' }, error)
     return res.status(500).json({ error: 'Internal server error' })
   }
 }

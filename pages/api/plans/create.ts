@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { requireAuth, getCurrentUser, syncUserToSupabase } from '../../../lib/clerk'
 import { createPlan, QuotaExceededError, ValidationError } from '../../../lib/plans'
+import { logger } from '../../../lib/logger'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -37,7 +38,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(401).json({ error: 'Authentication required' })
     }
 
-    console.error('Unexpected error creating plan:', error)
+    logger.error('Unexpected error creating plan', { route: 'plans/create' }, error)
     return res.status(500).json({ error: 'Internal server error' })
   }
 }

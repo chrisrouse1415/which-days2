@@ -8,6 +8,7 @@ import {
   NotOwnerError,
   ValidationError,
 } from '../../../lib/plans'
+import { logger } from '../../../lib/logger'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -51,7 +52,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ error: error.message })
     }
 
-    console.error('Unexpected error in plan management:', error)
+    logger.error('Unexpected error in plan management', { route: 'plans/manage', planId: req.query.planId as string }, error)
     return res.status(500).json({ error: 'Internal server error' })
   }
 }

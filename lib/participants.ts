@@ -1,4 +1,5 @@
 import { supabaseAdmin } from './supabase-admin'
+import { logger } from './logger'
 
 export class PlanNotFoundError extends Error {
   constructor(message = 'Plan not found') {
@@ -53,7 +54,7 @@ export async function getPlanByShareId(shareId: string) {
     .order('date', { ascending: true })
 
   if (datesError) {
-    console.error('Error fetching plan dates:', datesError)
+    logger.error('Error fetching plan dates', { shareId, planId: plan.id }, datesError)
     throw datesError
   }
 
@@ -64,7 +65,7 @@ export async function getPlanByShareId(shareId: string) {
     .order('created_at', { ascending: true })
 
   if (participantsError) {
-    console.error('Error fetching participants:', participantsError)
+    logger.error('Error fetching participants', { shareId, planId: plan.id }, participantsError)
     throw participantsError
   }
 
@@ -111,7 +112,7 @@ export async function joinPlan(shareId: string, displayName: string) {
     if (insertError.code === '23505') {
       throw new DuplicateNameError()
     }
-    console.error('Error inserting participant:', insertError)
+    logger.error('Error inserting participant', { shareId, planId: plan.id }, insertError)
     throw insertError
   }
 
@@ -161,7 +162,7 @@ export async function toggleDone(participantId: string) {
     .eq('id', participantId)
 
   if (updateErr) {
-    console.error('Error toggling done:', updateErr)
+    logger.error('Error toggling done', { participantId }, updateErr)
     throw updateErr
   }
 
@@ -193,7 +194,7 @@ export async function clearNeedsReview(participantId: string) {
     .eq('id', participantId)
 
   if (updateErr) {
-    console.error('Error clearing needs_review:', updateErr)
+    logger.error('Error clearing needs_review', { participantId }, updateErr)
     throw updateErr
   }
 

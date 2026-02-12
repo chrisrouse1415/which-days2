@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { toggleUnavailable, DateLockedError } from '../../../lib/availability'
 import { ParticipantNotFoundError, PlanNotActiveError } from '../../../lib/participants'
+import { logger } from '../../../lib/logger'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -31,7 +32,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(404).json({ error: error.message })
     }
 
-    console.error('Unexpected error toggling availability:', error)
+    logger.error('Unexpected error toggling availability', { route: 'availability/toggle', participantId: req.body?.participantId, planDateId: req.body?.planDateId }, error)
     return res.status(500).json({ error: 'Internal server error' })
   }
 }

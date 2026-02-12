@@ -6,6 +6,7 @@ import {
   DuplicateNameError,
   ValidationError,
 } from '../../../lib/participants'
+import { logger } from '../../../lib/logger'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -36,7 +37,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(410).json({ error: error.message })
     }
 
-    console.error('Unexpected error joining plan:', error)
+    logger.error('Unexpected error joining plan', { route: 'participants/join', shareId: req.body?.shareId }, error)
     return res.status(500).json({ error: 'Internal server error' })
   }
 }

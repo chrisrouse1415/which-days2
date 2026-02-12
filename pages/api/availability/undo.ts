@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { undoUnavailable, UndoExpiredError, UndoNotAllowedError } from '../../../lib/availability'
+import { logger } from '../../../lib/logger'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -24,7 +25,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(410).json({ error: error.message })
     }
 
-    console.error('Unexpected error undoing availability:', error)
+    logger.error('Unexpected error undoing availability', { route: 'availability/undo', participantId: req.body?.participantId }, error)
     return res.status(500).json({ error: 'Internal server error' })
   }
 }

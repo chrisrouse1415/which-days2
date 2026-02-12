@@ -6,6 +6,7 @@ import {
   NotOwnerError,
   ValidationError,
 } from '../../../lib/plans'
+import { logger } from '../../../lib/logger'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -37,7 +38,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ error: error.message })
     }
 
-    console.error('Unexpected error force-reopening date:', error)
+    logger.error('Unexpected error force-reopening date', { route: 'plans/force-reopen', planId: req.body?.planId, planDateId: req.body?.planDateId }, error)
     return res.status(500).json({ error: 'Internal server error' })
   }
 }

@@ -1,6 +1,7 @@
 import { nanoid } from 'nanoid'
 import { supabaseAdmin } from './supabase-admin'
 import { checkQuota } from './quota'
+import { logger } from './logger'
 
 export class QuotaExceededError extends Error {
   constructor(message = 'Plan quota exceeded') {
@@ -81,7 +82,7 @@ export async function createPlan(ownerClerkId: string, input: CreatePlanInput) {
     .single()
 
   if (planError) {
-    console.error('Error creating plan:', planError)
+    logger.error('Error creating plan', { userId: ownerClerkId }, planError)
     throw planError
   }
 
@@ -97,11 +98,18 @@ export async function createPlan(ownerClerkId: string, input: CreatePlanInput) {
     .select()
 
   if (datesError) {
-    console.error('Error creating plan dates:', datesError)
+    logger.error('Error creating plan dates', { planId: plan.id, userId: ownerClerkId }, datesError)
     // Clean up the plan if dates fail
     await supabaseAdmin.from('plans').delete().eq('id', plan.id)
     throw datesError
   }
+
+  // Log event
+  await supabaseAdmin.from('event_log').insert({
+    plan_id: plan.id,
+    event_type: 'plan_created',
+    metadata: { title: trimmedTitle, dateCount: uniqueDates.length },
+  })
 
   return {
     plan,
@@ -134,7 +142,7 @@ export async function getOwnerPlans(clerkId: string) {
     .order('created_at', { ascending: false })
 
   if (error) {
-    console.error('Error fetching owner plans:', error)
+    logger.error('Error fetching owner plans', { userId: clerkId }, error)
     throw error
   }
 
@@ -149,7 +157,7 @@ export async function getOwnerPlans(clerkId: string) {
     .in('plan_id', planIds)
 
   if (pErr) {
-    console.error('Error fetching participants for owner plans:', pErr)
+    logger.error('Error fetching participants for owner plans', { userId: clerkId }, pErr)
     throw pErr
   }
 
@@ -191,7 +199,7 @@ export async function getPlanForOwner(planId: string, clerkId: string) {
     .order('date', { ascending: true })
 
   if (datesErr) {
-    console.error('Error fetching plan dates:', datesErr)
+    logger.error('Error fetching plan dates', { planId }, datesErr)
     throw datesErr
   }
 
@@ -202,7 +210,7 @@ export async function getPlanForOwner(planId: string, clerkId: string) {
     .order('created_at', { ascending: true })
 
   if (pErr) {
-    console.error('Error fetching participants:', pErr)
+    logger.error('Error fetching participants', { planId }, pErr)
     throw pErr
   }
 
@@ -217,7 +225,7 @@ export async function getAvailabilityMatrix(planId: string) {
     .order('date', { ascending: true })
 
   if (datesErr) {
-    console.error('Error fetching plan dates for matrix:', datesErr)
+    logger.error('Error fetching plan dates for matrix', { planId }, datesErr)
     throw datesErr
   }
 
@@ -230,7 +238,7 @@ export async function getAvailabilityMatrix(planId: string) {
     .order('created_at', { ascending: true })
 
   if (pErr) {
-    console.error('Error fetching participants for matrix:', pErr)
+    logger.error('Error fetching participants for matrix', { planId }, pErr)
     throw pErr
   }
 
@@ -241,7 +249,7 @@ export async function getAvailabilityMatrix(planId: string) {
     .in('plan_date_id', dateIds)
 
   if (aErr) {
-    console.error('Error fetching availability for matrix:', aErr)
+    logger.error('Error fetching availability for matrix', { planId }, aErr)
     throw aErr
   }
 
@@ -287,9 +295,17 @@ export async function updatePlanStatus(
     .eq('id', planId)
 
   if (updateErr) {
-    console.error('Error updating plan status:', updateErr)
+    logger.error('Error updating plan status', { planId, userId: clerkId }, updateErr)
     throw updateErr
   }
+
+  // Log event
+  const eventType = status === 'locked' ? 'plan_locked' : 'plan_deleted'
+  await supabaseAdmin.from('event_log').insert({
+    plan_id: planId,
+    event_type: eventType,
+    metadata: {},
+  })
 
   return { status }
 }
@@ -342,7 +358,7 @@ export async function forceReopenDate(planId: string, planDateId: string, clerkI
     .eq('id', planDateId)
 
   if (dateUpdateErr) {
-    console.error('Error reopening date:', dateUpdateErr)
+    logger.error('Error reopening date', { planId, planDateId }, dateUpdateErr)
     throw dateUpdateErr
   }
 
@@ -353,7 +369,7 @@ export async function forceReopenDate(planId: string, planDateId: string, clerkI
     .eq('plan_date_id', planDateId)
 
   if (clearErr) {
-    console.error('Error clearing availability for reopened date:', clearErr)
+    logger.error('Error clearing availability for reopened date', { planId, planDateId }, clearErr)
     throw clearErr
   }
 
@@ -366,7 +382,7 @@ export async function forceReopenDate(planId: string, planDateId: string, clerkI
     .select('id')
 
   if (flagErr) {
-    console.error('Error flagging participants for review:', flagErr)
+    logger.error('Error flagging participants for review', { planId, planDateId }, flagErr)
     throw flagErr
   }
 

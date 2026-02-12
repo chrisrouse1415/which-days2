@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { clearNeedsReview, ParticipantNotFoundError } from '../../../lib/participants'
+import { logger } from '../../../lib/logger'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -21,7 +22,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(404).json({ error: error.message })
     }
 
-    console.error('Unexpected error clearing needs_review:', error)
+    logger.error('Unexpected error clearing needs_review', { route: 'participants/review', participantId: req.body?.participantId }, error)
     return res.status(500).json({ error: 'Internal server error' })
   }
 }
