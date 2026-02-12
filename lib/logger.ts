@@ -16,6 +16,9 @@ function serializeError(err: unknown): { name: string; message: string; stack?: 
       ...(process.env.NODE_ENV === 'development' ? { stack: err.stack } : {}),
     }
   }
+  if (typeof err === 'object' && err !== null) {
+    return { name: 'UnknownError', message: JSON.stringify(err) }
+  }
   return { name: 'UnknownError', message: String(err) }
 }
 

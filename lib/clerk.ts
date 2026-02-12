@@ -6,13 +6,16 @@ import type { NextApiRequest } from 'next'
 export async function syncUserToSupabase(userId: string, userData: any) {
   const { data, error } = await supabaseAdmin
     .from('users')
-    .upsert({
-      clerk_id: userId,
-      email: userData.emailAddresses?.[0]?.emailAddress,
-      first_name: userData.firstName,
-      last_name: userData.lastName,
-      updated_at: new Date().toISOString()
-    })
+    .upsert(
+      {
+        clerk_id: userId,
+        email: userData.emailAddresses?.[0]?.emailAddress,
+        first_name: userData.firstName,
+        last_name: userData.lastName,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'clerk_id' }
+    )
     .select()
 
   if (error) {
