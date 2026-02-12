@@ -1,11 +1,14 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { undoUnavailable, UndoExpiredError, UndoNotAllowedError } from '../../../lib/availability'
 import { logger } from '../../../lib/logger'
+import { checkRateLimit } from '../../../lib/rate-limit'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
+
+  if (!(await checkRateLimit(req, res))) return
 
   try {
     const { participantId, eventLogId } = req.body

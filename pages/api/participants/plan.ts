@@ -2,11 +2,14 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import { getPlanByShareId, PlanNotFoundError } from '../../../lib/participants'
 import { getParticipantAvailability, getPlanAvailabilitySummary } from '../../../lib/availability'
 import { logger } from '../../../lib/logger'
+import { checkRateLimit } from '../../../lib/rate-limit'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
+
+  if (!(await checkRateLimit(req, res))) return
 
   try {
     const shareId = req.query.shareId as string | undefined

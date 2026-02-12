@@ -2,11 +2,14 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import { toggleUnavailable, DateLockedError } from '../../../lib/availability'
 import { ParticipantNotFoundError, PlanNotActiveError } from '../../../lib/participants'
 import { logger } from '../../../lib/logger'
+import { checkRateLimit } from '../../../lib/rate-limit'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
+
+  if (!(await checkRateLimit(req, res))) return
 
   try {
     const { participantId, planDateId } = req.body
