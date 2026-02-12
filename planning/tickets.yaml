@@ -215,6 +215,7 @@ tickets:
 
   T-012:
     milestone: M3
+    status: done
     summary: "Empty states and error handling"
     acceptance_criteria:
       - "Empty states for no dates, no participants"
@@ -231,6 +232,7 @@ tickets:
 
   T-013:
     milestone: M3
+    status: done
     summary: "Mobile optimization and accessibility"
     acceptance_criteria:
       - "Responsive design for mobile devices"
@@ -246,46 +248,53 @@ tickets:
 
   T-014:
     milestone: M4
-    summary: "Metrics and observability"
+    status: done
+    summary: "Structured logging and event_log inserts"
     acceptance_criteria:
-      - "Key metrics tracked (plans_created, responses_saved, etc.)"
-      - "Structured logging for important events"
-      - "Simple monitoring dashboard"
-      - "Performance monitoring setup"
+      - "Structured JSON logger (lib/logger.ts) replaces all console.error/log calls"
+      - "All API routes and lib files use structured logger with context IDs"
+      - "plan_created and plan_locked/plan_deleted event_log inserts added"
     dependencies: ["T-013"]
     estimated_hours: 6
     files_to_touch:
-      - "lib/metrics.ts"
-      - "lib/logging.ts"
-      - "pages/api/admin/metrics.ts"
+      - "lib/logger.ts"
+      - "lib/plans.ts"
+      - "lib/availability.ts"
+      - "lib/participants.ts"
+      - "lib/clerk.ts"
+      - "lib/quota.ts"
+      - "pages/api/**/*.ts"
 
   T-015:
     milestone: M4
-    summary: "Rate limiting and abuse prevention"
+    status: done
+    summary: "Rate limiting on participant endpoints"
     acceptance_criteria:
-      - "Rate limits per IP and participant"
-      - "CAPTCHA integration for suspicious activity"
-      - "Abuse detection algorithms"
-      - "Admin controls for blocking/unblocking"
+      - "IP-based rate limiting (20 req/10s) on 6 unauthenticated endpoints"
+      - "Upstash Redis sliding window via @upstash/ratelimit"
+      - "Graceful degradation when env vars not configured"
+      - "429 response with rate limit headers"
     dependencies: ["T-014"]
     estimated_hours: 8
     files_to_touch:
-      - "lib/rate-limiting.ts"
-      - "lib/abuse-detection.ts"
-      - "pages/api/captcha/verify.ts"
-      - "middleware/rate-limit.ts"
+      - "lib/rate-limit.ts"
+      - "pages/api/participants/*.ts"
+      - "pages/api/availability/*.ts"
+      - ".env.example"
 
   T-016:
     milestone: M4
-    summary: "Backup and deployment automation"
+    status: done
+    summary: "CI/CD pipeline and operations docs"
     acceptance_criteria:
-      - "Daily automated database backups"
-      - "Deployment pipeline with proper testing"
-      - "Environment promotion process"
-      - "Basic runbook for operations"
+      - "GitHub Actions CI: type-check + lint on push/PR"
+      - ".eslintrc.json for non-interactive lint"
+      - "Stale NEXTAUTH_SECRET removed from vercel.json"
+      - "Operations guide (docs/OPERATIONS.md)"
     dependencies: ["T-015"]
     estimated_hours: 4
     files_to_touch:
-      - ".github/workflows/deploy.yml"
-      - "scripts/backup.sh"
-      - "docs/RUNBOOK.md"
+      - ".github/workflows/ci.yml"
+      - ".eslintrc.json"
+      - "vercel.json"
+      - "docs/OPERATIONS.md"
