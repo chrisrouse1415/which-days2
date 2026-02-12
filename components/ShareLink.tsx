@@ -5,7 +5,7 @@ interface ShareLinkProps {
 }
 
 export default function ShareLink({ shareId }: ShareLinkProps) {
-  const [copied, setCopied] = useState(false)
+  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle')
 
   const shareUrl =
     typeof window !== 'undefined'
@@ -15,10 +15,11 @@ export default function ShareLink({ shareId }: ShareLinkProps) {
   async function handleCopy() {
     try {
       await navigator.clipboard.writeText(shareUrl)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      setCopyState('copied')
+      setTimeout(() => setCopyState('idle'), 2000)
     } catch {
-      // Fallback: select the text
+      setCopyState('failed')
+      setTimeout(() => setCopyState('idle'), 2000)
     }
   }
 
@@ -33,9 +34,14 @@ export default function ShareLink({ shareId }: ShareLinkProps) {
       />
       <button
         onClick={handleCopy}
+        aria-label="Copy share link"
         className="shrink-0 px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
       >
-        {copied ? 'Copied!' : 'Copy'}
+        {copyState === 'copied'
+          ? 'Copied!'
+          : copyState === 'failed'
+            ? 'Failed to copy'
+            : 'Copy'}
       </button>
     </div>
   )

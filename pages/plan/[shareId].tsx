@@ -180,19 +180,22 @@ export default function PlanShare() {
               participantId={participantId}
               planId={planData.plan.id}
               shareId={shareId!}
+              planStatus={planData.plan.status}
               availabilitySummary={planData.availabilitySummary}
               myAvailability={planData.myAvailability ?? []}
               onDataRefresh={handleDataRefresh}
             />
 
-            <DoneButton
-              participantId={participantId}
-              isDone={isDone}
-              onToggled={(newIsDone) => {
-                setIsDone(newIsDone)
-                handleDataRefresh()
-              }}
-            />
+            {planData.plan.status === 'active' && (
+              <DoneButton
+                participantId={participantId}
+                isDone={isDone}
+                onToggled={(newIsDone) => {
+                  setIsDone(newIsDone)
+                  handleDataRefresh()
+                }}
+              />
+            )}
 
             <LiveSummary
               participantCount={planData.participants.length}

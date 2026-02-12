@@ -42,6 +42,25 @@ export default function LiveSummary({
           {participantCount !== 1 ? 's' : ''} done
         </p>
 
+        {viableDates.length === 0 && eliminatedDates.length > 0 && (
+          <div className="bg-amber-50 border border-amber-200 rounded-md p-3" role="alert">
+            <p className="text-sm font-medium text-amber-800">
+              All dates have been eliminated. The plan owner can reopen dates if needed.
+            </p>
+          </div>
+        )}
+
+        {doneCount === participantCount &&
+          participantCount > 0 &&
+          viableDates.length > 0 && (
+            <div className="bg-green-50 border border-green-200 rounded-md p-3" role="alert">
+              <p className="text-sm font-medium text-green-800">
+                Everyone&apos;s done! {viableDates.length} date{viableDates.length !== 1 ? 's' : ''} work
+                {viableDates.length === 1 ? 's' : ''} for the group.
+              </p>
+            </div>
+          )}
+
         {viableDates.length > 0 && (
           <div>
             <p className="text-xs font-medium text-green-700 mb-1">

@@ -26,6 +26,7 @@ interface AvailabilityGridProps {
   participantId: string
   planId: string
   shareId: string
+  planStatus: string
   availabilitySummary: AvailabilitySummaryDate[]
   myAvailability: MyAvailability[]
   onDataRefresh: () => void
@@ -67,6 +68,7 @@ function StatusBadge({ status }: { status: string }) {
 
 export default function AvailabilityGrid({
   participantId,
+  planStatus,
   availabilitySummary,
   myAvailability,
   onDataRefresh,
@@ -219,6 +221,31 @@ export default function AvailabilityGrid({
       return next
     })
     onDataRefresh()
+  }
+
+  if (planStatus === 'locked' || planStatus === 'deleted') {
+    const isLocked = planStatus === 'locked'
+    return (
+      <div className="space-y-3">
+        <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">
+          Your Availability
+        </h3>
+        <div
+          className={`border rounded-lg p-4 ${
+            isLocked
+              ? 'bg-blue-50 border-blue-200'
+              : 'bg-gray-50 border-gray-200'
+          }`}
+          role="alert"
+        >
+          <p className={`text-sm font-medium ${isLocked ? 'text-blue-800' : 'text-gray-600'}`}>
+            {isLocked
+              ? 'This plan is locked — no more changes allowed.'
+              : 'This plan has been deleted.'}
+          </p>
+        </div>
+      </div>
+    )
   }
 
   return (

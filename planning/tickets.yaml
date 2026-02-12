@@ -17,7 +17,7 @@ milestones:
   M3:
     name: "UI/UX Polish"
     duration: "2 days"
-    description: "Ranking algorithms, empty states, mobile optimization"
+    description: "Empty states, error handling, mobile optimization, accessibility"
   
   M4:
     name: "Operations & Monitoring"
@@ -27,6 +27,7 @@ milestones:
 tickets:
   T-001:
     milestone: M0
+    status: done
     summary: "Project setup and initial infrastructure"
     acceptance_criteria:
       - "Next.js PWA project initialized on Vercel"
@@ -44,6 +45,7 @@ tickets:
 
   T-002:
     milestone: M0
+    status: done
     summary: "Owner authentication with Clerk (Google/Apple OAuth)"
     acceptance_criteria:
       - "Clerk authentication components integrated"
@@ -61,6 +63,7 @@ tickets:
 
   T-003:
     milestone: M0
+    status: done
     summary: "Plan creation and quota management"
     acceptance_criteria:
       - "Owner can create plan with title and dates"
@@ -78,6 +81,7 @@ tickets:
 
   T-004:
     milestone: M0
+    status: done
     summary: "Database schema and RLS policies"
     acceptance_criteria:
       - "Plans, PlanDates, Participants, Availability tables created"
@@ -95,6 +99,7 @@ tickets:
 
   T-005:
     milestone: M1
+    status: done
     summary: "Participant join flow (no auth required)"
     acceptance_criteria:
       - "Join via share link works"
@@ -111,6 +116,7 @@ tickets:
 
   T-006:
     milestone: M1
+    status: done
     summary: "Availability toggle system"
     acceptance_criteria:
       - "Toggle can't-do status for each date"
@@ -127,7 +133,8 @@ tickets:
 
   T-007:
     milestone: M1
-    summary: "30-second undo mechanism"
+    status: done
+    summary: "30-second undo mechanism (merged into T-006 implementation)"
     acceptance_criteria:
       - "Undo available for 30s after marking can't-do"
       - "Only actor can undo their own mark"
@@ -142,6 +149,7 @@ tickets:
 
   T-008:
     milestone: M1
+    status: done
     summary: "Participant 'done' status and live summaries"
     acceptance_criteria:
       - "I'm done button toggles completion status"
@@ -158,6 +166,7 @@ tickets:
 
   T-009:
     milestone: M2
+    status: done
     summary: "Owner dashboard and plan management"
     acceptance_criteria:
       - "Results matrix view for owners"
@@ -174,6 +183,7 @@ tickets:
 
   T-010:
     milestone: M2
+    status: done
     summary: "Force Reopen functionality"
     acceptance_criteria:
       - "Owner can Force Reopen eliminated dates"
@@ -190,7 +200,8 @@ tickets:
 
   T-011:
     milestone: M3
-    summary: "Works-for-most ranking algorithm"
+    status: dropped
+    summary: "Works-for-most ranking algorithm (dropped — binary viable/eliminated model makes ranking meaningless)"
     acceptance_criteria:
       - "Dates sorted by availability count"
       - "Clear indication of participant counts"
@@ -210,7 +221,7 @@ tickets:
       - "Loading states during async operations"
       - "Error boundaries and user-friendly error messages"
       - "Graceful handling of network failures"
-    dependencies: ["T-011"]
+    dependencies: ["T-010"]
     estimated_hours: 8
     files_to_touch:
       - "components/EmptyStates.tsx"

@@ -67,6 +67,14 @@ export default function ResultsMatrix({
     return <p className="text-sm text-gray-400">No dates in this plan.</p>
   }
 
+  if (participants.length === 0) {
+    return (
+      <div className="bg-white border border-gray-200 rounded-lg p-8 text-center">
+        <p className="text-sm text-gray-500">No participants yet. Share the link to get started.</p>
+      </div>
+    )
+  }
+
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full text-sm border border-gray-200 rounded-lg overflow-hidden">
