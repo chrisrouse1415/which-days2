@@ -266,11 +266,11 @@ export default function AvailabilityGrid({
           return (
             <div
               key={date.planDateId}
-              className={`flex items-center justify-between px-4 py-3 ${
+              className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-4 py-3 ${
                 isEliminated ? 'bg-gray-50' : 'bg-white'
               }`}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 min-w-0">
                 <span
                   className={`text-sm font-medium ${
                     isEliminated ? 'text-gray-400 line-through' : 'text-gray-900'
@@ -303,7 +303,7 @@ export default function AvailabilityGrid({
                   <button
                     onClick={() => handleToggle(date.planDateId)}
                     disabled={togglingIds.has(date.planDateId)}
-                    className="px-3 py-1 text-sm font-medium text-red-600 bg-white border border-red-200 rounded-md hover:bg-red-50 disabled:opacity-50 transition-colors"
+                    className="px-4 py-2 min-h-[44px] text-sm font-medium text-red-600 bg-white border border-red-200 rounded-md hover:bg-red-50 disabled:opacity-50 transition-colors"
                   >
                     I can&apos;t do this day
                   </button>

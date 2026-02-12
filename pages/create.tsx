@@ -56,13 +56,13 @@ export default function CreatePage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b border-gray-200">
-        <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between gap-4 min-w-0">
           <h1 className="text-lg font-semibold text-gray-900">Create a Plan</h1>
           <LoginButton />
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto px-4 py-8">
+      <main id="main-content" className="max-w-3xl mx-auto px-4 py-8">
         {loading && (
           <p className="text-center text-gray-500">Loading...</p>
         )}

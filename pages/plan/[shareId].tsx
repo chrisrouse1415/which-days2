@@ -131,7 +131,7 @@ export default function PlanShare() {
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b border-gray-200">
-        <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between gap-4 min-w-0">
           <Link href="/" className="text-lg font-semibold text-gray-900 hover:text-gray-700">
             Which Days
           </Link>
@@ -143,7 +143,7 @@ export default function PlanShare() {
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto px-4 py-8">
+      <main id="main-content" className="max-w-3xl mx-auto px-4 py-8">
         {error ? (
           <div className="text-center py-16">
             <p className="text-red-600">{error}</p>

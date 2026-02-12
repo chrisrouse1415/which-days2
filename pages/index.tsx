@@ -8,13 +8,13 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b border-gray-200">
-        <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between gap-4 min-w-0">
           <h1 className="text-lg font-semibold text-gray-900">Which Days</h1>
           <LoginButton />
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto px-4 py-16 text-center">
+      <main id="main-content" className="max-w-3xl mx-auto px-4 py-16 text-center">
         <h2 className="text-3xl font-bold text-gray-900 mb-4">
           Find a day that works for everyone
         </h2>

@@ -7,8 +7,8 @@ export default function LoginButton() {
 
   if (isSignedIn) {
     return (
-      <div className="flex items-center gap-4">
-        <span className="text-sm text-gray-600">
+      <div className="flex items-center gap-4 min-w-0">
+        <span className="text-sm text-gray-600 truncate max-w-[150px] sm:max-w-none">
           Hello, {user.firstName || user.emailAddresses[0].emailAddress}
         </span>
         <SignOutButton>

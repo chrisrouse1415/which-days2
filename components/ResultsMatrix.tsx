@@ -80,7 +80,7 @@ export default function ResultsMatrix({
       <table className="min-w-full text-sm border border-gray-200 rounded-lg overflow-hidden">
         <thead>
           <tr className="bg-gray-50">
-            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wide border-b border-gray-200">
+            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wide border-b border-gray-200 sticky left-0 bg-gray-50 z-10">
               Date
             </th>
             <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wide border-b border-gray-200">
@@ -109,7 +109,7 @@ export default function ResultsMatrix({
             const isEliminated = date.status === 'eliminated'
             return (
               <tr key={date.id} className={isEliminated ? 'bg-gray-50' : 'bg-white'}>
-                <td className={`px-3 py-2 font-medium whitespace-nowrap ${isEliminated ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
+                <td className={`px-3 py-2 font-medium whitespace-nowrap sticky left-0 z-10 ${isEliminated ? 'text-gray-400 line-through bg-gray-50' : 'text-gray-900 bg-white'}`}>
                   {formatDate(date.date)}
                 </td>
                 <td className="px-3 py-2">
@@ -132,7 +132,7 @@ export default function ResultsMatrix({
                   )
                 })}
                 {planStatus === 'active' && (
-                  <td className="px-3 py-2 text-center">
+                  <td className="px-3 py-2 text-center min-w-[44px] min-h-[44px]">
                     {date.status === 'eliminated' && (
                       <ForceReopenButton
                         planId={planId}
