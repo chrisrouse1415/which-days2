@@ -24,12 +24,22 @@ export default function Home() {
         </p>
 
         {isLoaded && isSignedIn ? (
-          <Link
-            href="/create"
-            className="inline-block rounded-md bg-blue-600 px-6 py-3 text-sm font-medium text-white shadow-sm hover:bg-blue-700"
-          >
-            Create a Plan
-          </Link>
+          <div className="space-y-3">
+            <Link
+              href="/create"
+              className="inline-block rounded-md bg-blue-600 px-6 py-3 text-sm font-medium text-white shadow-sm hover:bg-blue-700"
+            >
+              Create a Plan
+            </Link>
+            <div>
+              <Link
+                href="/dashboard"
+                className="text-sm text-blue-600 hover:text-blue-800"
+              >
+                My Plans
+              </Link>
+            </div>
+          </div>
         ) : (
           <div className="space-y-3">
             <p className="text-sm text-gray-500">Sign in to get started</p>
