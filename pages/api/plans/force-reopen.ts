@@ -1,0 +1,43 @@
+import type { NextApiRequest, NextApiResponse } from 'next'
+import { requireAuth } from '../../../lib/clerk'
+import {
+  forceReopenDate,
+  PlanNotFoundError,
+  NotOwnerError,
+  ValidationError,
+} from '../../../lib/plans'
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' })
+  }
+
+  try {
+    const userId = await requireAuth(req)
+    const { planId, planDateId } = req.body
+
+    if (!planId || !planDateId) {
+      return res.status(400).json({ error: 'Missing planId or planDateId' })
+    }
+
+    const result = await forceReopenDate(planId, planDateId, userId)
+
+    return res.status(200).json(result)
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Authentication required') {
+      return res.status(401).json({ error: 'Authentication required' })
+    }
+    if (error instanceof PlanNotFoundError) {
+      return res.status(404).json({ error: error.message })
+    }
+    if (error instanceof NotOwnerError) {
+      return res.status(403).json({ error: error.message })
+    }
+    if (error instanceof ValidationError) {
+      return res.status(400).json({ error: error.message })
+    }
+
+    console.error('Unexpected error force-reopening date:', error)
+    return res.status(500).json({ error: 'Internal server error' })
+  }
+}
