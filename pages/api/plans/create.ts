@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { requireAuth } from '../../../lib/clerk'
+import { requireAuth, getCurrentUser, syncUserToSupabase } from '../../../lib/clerk'
 import { createPlan, QuotaExceededError, ValidationError } from '../../../lib/plans'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -9,6 +9,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     const userId = await requireAuth(req)
+
+    // Ensure user exists in Supabase before creating plan (FK constraint)
+    const user = await getCurrentUser(req)
+    if (user) {
+      await syncUserToSupabase(userId, user)
+    }
+
     const { title, dates } = req.body
 
     const result = await createPlan(userId, { title, dates })
