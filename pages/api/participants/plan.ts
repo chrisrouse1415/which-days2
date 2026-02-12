@@ -20,9 +20,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const summary = await getPlanAvailabilitySummary(plan.id)
 
     let myAvailability = null
+    let needsReview = false
     if (participantId) {
       myAvailability = await getParticipantAvailability(participantId, plan.id)
+      const me = participants.find((p) => p.id === participantId)
+      if (me) {
+        needsReview = me.needs_review
+      }
     }
+
+    const doneCount = participants.filter((p) => p.is_done).length
 
     return res.status(200).json({
       plan,
@@ -30,6 +37,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       participants,
       availabilitySummary: summary,
       myAvailability,
+      doneCount,
+      needsReview,
     })
   } catch (error) {
     if (error instanceof PlanNotFoundError) {

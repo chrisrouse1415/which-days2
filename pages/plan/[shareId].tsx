@@ -3,6 +3,9 @@ import { useRouter } from 'next/router'
 import Link from 'next/link'
 import JoinForm from '../../components/JoinForm'
 import AvailabilityGrid from '../../components/AvailabilityGrid'
+import DoneButton from '../../components/DoneButton'
+import LiveSummary from '../../components/LiveSummary'
+import NeedsReviewBanner from '../../components/NeedsReviewBanner'
 
 type Phase = 'loading' | 'join' | 'availability'
 
@@ -21,6 +24,8 @@ interface PlanData {
   participants: Array<{
     id: string
     display_name: string
+    is_done: boolean
+    needs_review: boolean
   }>
   availabilitySummary: Array<{
     planDateId: string
@@ -35,6 +40,8 @@ interface PlanData {
     plan_date_id: string
     status: 'available' | 'unavailable'
   }> | null
+  doneCount: number
+  needsReview: boolean
 }
 
 function getStorageKey(shareId: string) {
@@ -49,6 +56,8 @@ export default function PlanShare() {
   const [planData, setPlanData] = useState<PlanData | null>(null)
   const [participantId, setParticipantId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [isDone, setIsDone] = useState(false)
+  const [needsReview, setNeedsReview] = useState(false)
 
   const fetchPlanData = useCallback(
     async (pid: string | null) => {
@@ -77,9 +86,11 @@ export default function PlanShare() {
 
         // If we have a stored participantId, verify it exists in the plan
         if (pid) {
-          const found = data.participants.some((p) => p.id === pid)
-          if (found) {
+          const me = data.participants.find((p) => p.id === pid)
+          if (me) {
             setParticipantId(pid)
+            setIsDone(me.is_done)
+            setNeedsReview(data.needsReview)
             setPhase('availability')
           } else {
             // Stored participant not found — clear and show join
@@ -158,6 +169,13 @@ export default function PlanShare() {
               </p>
             </div>
 
+            {needsReview && (
+              <NeedsReviewBanner
+                participantId={participantId}
+                onDismissed={() => setNeedsReview(false)}
+              />
+            )}
+
             <AvailabilityGrid
               participantId={participantId}
               planId={planData.plan.id}
@@ -165,6 +183,21 @@ export default function PlanShare() {
               availabilitySummary={planData.availabilitySummary}
               myAvailability={planData.myAvailability ?? []}
               onDataRefresh={handleDataRefresh}
+            />
+
+            <DoneButton
+              participantId={participantId}
+              isDone={isDone}
+              onToggled={(newIsDone) => {
+                setIsDone(newIsDone)
+                handleDataRefresh()
+              }}
+            />
+
+            <LiveSummary
+              participantCount={planData.participants.length}
+              doneCount={planData.doneCount}
+              availabilitySummary={planData.availabilitySummary}
             />
           </div>
         ) : null}

@@ -125,3 +125,82 @@ export async function joinPlan(shareId: string, displayName: string) {
 
   return participant
 }
+
+export async function toggleDone(participantId: string) {
+  // Fetch participant
+  const { data: participant, error: pErr } = await supabaseAdmin
+    .from('participants')
+    .select()
+    .eq('id', participantId)
+    .single()
+
+  if (pErr || !participant) {
+    throw new ParticipantNotFoundError()
+  }
+
+  // Verify plan is active
+  const { data: plan, error: planErr } = await supabaseAdmin
+    .from('plans')
+    .select('status')
+    .eq('id', participant.plan_id)
+    .single()
+
+  if (planErr || !plan) {
+    throw new Error('Plan not found')
+  }
+
+  if (plan.status !== 'active') {
+    throw new PlanNotActiveError()
+  }
+
+  const newIsDone = !participant.is_done
+
+  const { error: updateErr } = await supabaseAdmin
+    .from('participants')
+    .update({ is_done: newIsDone, updated_at: new Date().toISOString() })
+    .eq('id', participantId)
+
+  if (updateErr) {
+    console.error('Error toggling done:', updateErr)
+    throw updateErr
+  }
+
+  // Log event
+  await supabaseAdmin.from('event_log').insert({
+    plan_id: participant.plan_id,
+    participant_id: participantId,
+    event_type: newIsDone ? 'participant_done' : 'participant_undone',
+    metadata: {},
+  })
+
+  return { is_done: newIsDone }
+}
+
+export async function clearNeedsReview(participantId: string) {
+  const { data: participant, error: pErr } = await supabaseAdmin
+    .from('participants')
+    .select()
+    .eq('id', participantId)
+    .single()
+
+  if (pErr || !participant) {
+    throw new ParticipantNotFoundError()
+  }
+
+  const { error: updateErr } = await supabaseAdmin
+    .from('participants')
+    .update({ needs_review: false, updated_at: new Date().toISOString() })
+    .eq('id', participantId)
+
+  if (updateErr) {
+    console.error('Error clearing needs_review:', updateErr)
+    throw updateErr
+  }
+
+  await supabaseAdmin.from('event_log').insert({
+    plan_id: participant.plan_id,
+    participant_id: participantId,
+    event_type: 'needs_review_cleared',
+    metadata: {},
+  })
+}
