@@ -55,8 +55,7 @@ export default function JoinForm({ shareId, planTitle, onJoined }: JoinFormProps
 
   return (
     <div className="max-w-md mx-auto">
-      <h2 className="text-xl font-semibold text-gray-900 mb-1">Join This Plan</h2>
-      <p className="text-gray-500 mb-6">{planTitle}</p>
+      <h2 className="text-xl font-semibold text-gray-900 mb-6">Join {planTitle}?</h2>
 
       {error && (
         <div className="mb-4 p-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-md">
