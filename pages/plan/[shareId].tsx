@@ -165,7 +165,7 @@ export default function PlanShare() {
             <div>
               <h1 className="text-2xl font-bold text-gray-900">{planData.plan.title}</h1>
               <p className="text-sm text-gray-500 mt-1">
-                {planData.participants.length} participant{planData.participants.length !== 1 ? 's' : ''}
+                {planData.participants.map((p) => p.display_name).join(', ')}
               </p>
             </div>
 
@@ -198,7 +198,7 @@ export default function PlanShare() {
             )}
 
             <LiveSummary
-              participantCount={planData.participants.length}
+              participants={planData.participants}
               doneCount={planData.doneCount}
               availabilitySummary={planData.availabilitySummary}
             />

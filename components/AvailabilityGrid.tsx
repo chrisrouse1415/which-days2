@@ -279,9 +279,9 @@ export default function AvailabilityGrid({
                   {formatDate(date.date)}
                 </span>
                 <StatusBadge status={dateStatus} />
-                {date.unavailableCount > 0 && (
+                {date.unavailableBy.length > 0 && (
                   <span className="text-xs text-gray-400">
-                    {date.unavailableCount} can&apos;t
+                    {date.unavailableBy.map((u) => u.displayName).join(', ')} can&apos;t
                   </span>
                 )}
               </div>

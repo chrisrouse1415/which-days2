@@ -6,8 +6,14 @@ interface DateSummary {
   unavailableBy: Array<{ participantId: string; displayName: string }>
 }
 
+interface Participant {
+  id: string
+  display_name: string
+  is_done: boolean
+}
+
 interface LiveSummaryProps {
-  participantCount: number
+  participants: Participant[]
   doneCount: number
   availabilitySummary: DateSummary[]
 }
@@ -22,10 +28,13 @@ function formatDate(dateStr: string): string {
 }
 
 export default function LiveSummary({
-  participantCount,
+  participants,
   doneCount,
   availabilitySummary,
 }: LiveSummaryProps) {
+  const participantCount = participants.length
+  const doneNames = participants.filter((p) => p.is_done).map((p) => p.display_name)
+  const notDoneNames = participants.filter((p) => !p.is_done).map((p) => p.display_name)
   const viableDates = availabilitySummary.filter(
     (d) => d.status === 'viable' || d.status === 'reopened'
   )
@@ -36,11 +45,23 @@ export default function LiveSummary({
       <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">Summary</h3>
 
       <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-3">
-        <p className="text-sm text-gray-600">
-          <span className="font-medium text-gray-900">{doneCount}</span> of{' '}
-          <span className="font-medium text-gray-900">{participantCount}</span> participant
-          {participantCount !== 1 ? 's' : ''} done
-        </p>
+        <div className="text-sm text-gray-600 space-y-1">
+          <p>
+            <span className="font-medium text-gray-900">{doneCount}</span> of{' '}
+            <span className="font-medium text-gray-900">{participantCount}</span> participant
+            {participantCount !== 1 ? 's' : ''} done
+          </p>
+          {doneNames.length > 0 && (
+            <p className="text-xs text-green-700">
+              Done: {doneNames.join(', ')}
+            </p>
+          )}
+          {notDoneNames.length > 0 && (
+            <p className="text-xs text-gray-400">
+              Waiting on: {notDoneNames.join(', ')}
+            </p>
+          )}
+        </div>
 
         {viableDates.length === 0 && eliminatedDates.length > 0 && (
           <div className="bg-amber-50 border border-amber-200 rounded-md p-3" role="alert">
