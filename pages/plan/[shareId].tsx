@@ -162,12 +162,7 @@ export default function PlanShare() {
           </div>
         ) : phase === 'availability' && planData && participantId ? (
           <div className="space-y-6">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">{planData.plan.title}</h1>
-              <p className="text-sm text-gray-500 mt-1">
-                {planData.participants.map((p) => p.display_name).join(', ')}
-              </p>
-            </div>
+            <h1 className="text-2xl font-bold text-gray-900">{planData.plan.title}</h1>
 
             {needsReview && (
               <NeedsReviewBanner

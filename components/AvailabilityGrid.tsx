@@ -41,20 +41,22 @@ function formatDate(dateStr: string): string {
   })
 }
 
-function StatusBadge({ status }: { status: string }) {
-  if (status === 'viable' || status === 'reopened') {
+function StatusBadge({ status, unavailableNames }: { status: string; unavailableNames?: string[] }) {
+  const hasUnavailable = unavailableNames && unavailableNames.length > 0
+
+  if (status === 'eliminated' && hasUnavailable) {
     return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-        viable
+      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+        {unavailableNames.join(', ')} can&apos;t
       </span>
     )
   }
-  if (status === 'eliminated') {
-    return (
+  if (status === 'viable' || status === 'reopened') {
+    return hasUnavailable ? (
       <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
-        eliminated
+        {unavailableNames.join(', ')} can&apos;t
       </span>
-    )
+    ) : null
   }
   if (status === 'locked') {
     return (
@@ -95,25 +97,11 @@ export default function AvailabilityGrid({
     [optimisticDates]
   )
 
-  const iMarkedUnavailable = useCallback(
-    (planDateId: string): boolean => {
-      return getMyStatus(planDateId) === 'unavailable'
-    },
-    [getMyStatus]
-  )
-
   const hasActiveUndo = useCallback(
     (planDateId: string): UndoPending | undefined => {
       return undoPending.find((u) => u.planDateId === planDateId)
     },
     [undoPending]
-  )
-
-  const othersMarkedUnavailable = useCallback(
-    (date: AvailabilitySummaryDate): boolean => {
-      return date.unavailableBy.some((u) => u.participantId !== participantId)
-    },
-    [participantId]
   )
 
   async function handleToggle(planDateId: string) {
@@ -261,32 +249,27 @@ export default function AvailabilityGrid({
           const undoEntry = hasActiveUndo(date.planDateId)
           const isLocked = dateStatus === 'locked'
           const isEliminated = dateStatus === 'eliminated'
-          const eliminatedByOthers = isEliminated && othersMarkedUnavailable(date) && !iMarkedUnavailable(date.planDateId)
+          const unavailableNames = date.unavailableBy.map((u) => u.displayName)
 
           return (
             <div
               key={date.planDateId}
-              className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-4 py-3 ${
+              className={`flex flex-row items-center justify-between gap-2 px-4 py-3 ${
                 isEliminated ? 'bg-gray-50' : 'bg-white'
               }`}
             >
               <div className="flex items-center gap-3 min-w-0">
                 <span
-                  className={`text-sm font-medium ${
+                  className={`text-sm font-medium whitespace-nowrap ${
                     isEliminated ? 'text-gray-400 line-through' : 'text-gray-900'
                   }`}
                 >
                   {formatDate(date.date)}
                 </span>
-                <StatusBadge status={dateStatus} />
-                {date.unavailableBy.length > 0 && (
-                  <span className="text-xs text-gray-400">
-                    {date.unavailableBy.map((u) => u.displayName).join(', ')} can&apos;t
-                  </span>
-                )}
+                <StatusBadge status={dateStatus} unavailableNames={unavailableNames} />
               </div>
 
-              <div>
+              <div className="shrink-0">
                 {isLocked ? (
                   <span className="text-xs text-gray-400">Locked</span>
                 ) : undoEntry ? (
@@ -297,9 +280,7 @@ export default function AvailabilityGrid({
                   />
                 ) : myStatus === 'unavailable' ? (
                   <span className="text-xs text-gray-400">Marked unavailable</span>
-                ) : eliminatedByOthers ? (
-                  <span className="text-xs text-gray-400">Eliminated</span>
-                ) : (
+                ) : isEliminated ? null : (
                   <button
                     onClick={() => handleToggle(date.planDateId)}
                     disabled={togglingIds.has(date.planDateId)}
