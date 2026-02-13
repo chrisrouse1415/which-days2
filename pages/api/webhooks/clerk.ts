@@ -22,8 +22,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // Get the body
   const body = JSON.stringify(req.body)
 
-  // Create a new Svix instance with your webhook secret
-  const wh = new Webhook(process.env.CLERK_WEBHOOK_SECRET || '')
+  // Verify webhook secret is configured
+  const secret = process.env.CLERK_WEBHOOK_SECRET
+  if (!secret) {
+    logger.error('CLERK_WEBHOOK_SECRET not configured', { route: 'webhooks/clerk' })
+    return res.status(500).json({ error: 'Webhook not configured' })
+  }
+
+  const wh = new Webhook(secret)
 
   let evt: WebhookEvent
 

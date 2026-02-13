@@ -35,10 +35,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const doneCount = participants.filter((p) => p.is_done).length
 
+    // Only expose fields the frontend needs — omit plan_id, created_at, updated_at
+    const safeParticipants = participants.map((p) => ({
+      id: p.id,
+      display_name: p.display_name,
+      is_done: p.is_done,
+      needs_review: p.needs_review,
+    }))
+
     return res.status(200).json({
       plan,
       dates,
-      participants,
+      participants: safeParticipants,
       availabilitySummary: summary,
       myAvailability,
       doneCount,

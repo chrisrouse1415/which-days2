@@ -42,11 +42,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (error instanceof Error && error.message === 'Authentication required') {
       return res.status(401).json({ error: 'Authentication required' })
     }
-    if (error instanceof PlanNotFoundError) {
-      return res.status(404).json({ error: error.message })
-    }
-    if (error instanceof NotOwnerError) {
-      return res.status(403).json({ error: error.message })
+    if (error instanceof PlanNotFoundError || error instanceof NotOwnerError) {
+      return res.status(404).json({ error: 'Plan not found' })
     }
     if (error instanceof ValidationError) {
       return res.status(400).json({ error: error.message })
