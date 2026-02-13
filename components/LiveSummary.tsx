@@ -42,29 +42,29 @@ export default function LiveSummary({
 
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">Summary</h3>
+      <h3 className="text-sm font-medium text-slate-500 uppercase tracking-wide">Summary</h3>
 
-      <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-3">
-        <div className="text-sm text-gray-600 space-y-1">
+      <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3 shadow-sm">
+        <div className="text-sm text-slate-600 space-y-1">
           <p>
-            <span className="font-medium text-gray-900">{doneCount}</span> of{' '}
-            <span className="font-medium text-gray-900">{participantCount}</span> participant
+            <span className="font-medium text-slate-900">{doneCount}</span> of{' '}
+            <span className="font-medium text-slate-900">{participantCount}</span> participant
             {participantCount !== 1 ? 's' : ''} done
           </p>
           {doneNames.length > 0 && (
-            <p className="text-xs text-green-700">
+            <p className="text-xs text-emerald-700">
               Done: {doneNames.join(', ')}
             </p>
           )}
           {notDoneNames.length > 0 && (
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-slate-400">
               Waiting on: {notDoneNames.join(', ')}
             </p>
           )}
         </div>
 
         {viableDates.length === 0 && eliminatedDates.length > 0 && (
-          <div className="bg-amber-50 border border-amber-200 rounded-md p-3" role="alert">
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3" role="alert">
             <p className="text-sm font-medium text-amber-800">
               All dates have been eliminated. The plan owner can reopen dates if needed.
             </p>
@@ -74,8 +74,8 @@ export default function LiveSummary({
         {doneCount === participantCount &&
           participantCount > 0 &&
           viableDates.length > 0 && (
-            <div className="bg-green-50 border border-green-200 rounded-md p-3" role="alert">
-              <p className="text-sm font-medium text-green-800">
+            <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3" role="alert">
+              <p className="text-sm font-medium text-emerald-800">
                 Everyone&apos;s done! {viableDates.length} date{viableDates.length !== 1 ? 's' : ''} work
                 {viableDates.length === 1 ? 's' : ''} for the group.
               </p>
@@ -84,14 +84,14 @@ export default function LiveSummary({
 
         {viableDates.length > 0 && (
           <div>
-            <p className="text-xs font-medium text-green-700 mb-1">
+            <p className="text-xs font-medium text-emerald-700 mb-1">
               Viable dates ({viableDates.length})
             </p>
             <div className="flex flex-wrap gap-2">
               {viableDates.map((d) => (
                 <span
                   key={d.planDateId}
-                  className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800"
+                  className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-emerald-100 text-emerald-800"
                 >
                   {formatDate(d.date)}
                 </span>
@@ -102,14 +102,14 @@ export default function LiveSummary({
 
         {eliminatedDates.length > 0 && (
           <div>
-            <p className="text-xs font-medium text-red-700 mb-1">
+            <p className="text-xs font-medium text-rose-700 mb-1">
               Eliminated ({eliminatedDates.length})
             </p>
             <div className="flex flex-wrap gap-2">
               {eliminatedDates.map((d) => (
                 <span
                   key={d.planDateId}
-                  className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800 line-through"
+                  className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-rose-100 text-rose-800 line-through"
                 >
                   {formatDate(d.date)}
                 </span>

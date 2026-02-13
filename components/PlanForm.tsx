@@ -89,10 +89,10 @@ export default function PlanForm({ quota }: PlanFormProps) {
   return (
     <form onSubmit={handleSubmit} className="max-w-lg mx-auto space-y-6">
       {/* Quota indicator */}
-      <div className="text-sm text-gray-500">
+      <div className="text-sm text-slate-500">
         Active plans: {quota.activePlanCount} / {quota.maxPlans}
         {!quota.canCreate && (
-          <span className="ml-2 text-red-600 font-medium">
+          <span className="ml-2 text-rose-600 font-medium">
             Limit reached
           </span>
         )}
@@ -100,14 +100,14 @@ export default function PlanForm({ quota }: PlanFormProps) {
 
       {/* Error message */}
       {error && (
-        <div className="p-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-md">
+        <div className="p-3 text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-lg">
           {error}
         </div>
       )}
 
       {/* Title */}
       <div>
-        <label htmlFor="title" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="title" className="block text-sm font-medium text-slate-700">
           Plan title
         </label>
         <input
@@ -117,13 +117,13 @@ export default function PlanForm({ quota }: PlanFormProps) {
           onChange={(e) => setTitle(e.target.value)}
           maxLength={100}
           placeholder="e.g. Team dinner this month"
-          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
         />
       </div>
 
       {/* Dates */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-slate-700 mb-2">
           Dates
         </label>
         <div className="space-y-2">
@@ -133,13 +133,13 @@ export default function PlanForm({ quota }: PlanFormProps) {
                 type="date"
                 value={date}
                 onChange={(e) => updateDate(index, e.target.value)}
-                className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
               />
               {dates.length > 1 && (
                 <button
                   type="button"
                   onClick={() => removeDate(index)}
-                  className="px-2 py-2 text-sm text-red-600 hover:text-red-800"
+                  className="px-2 py-2 text-sm text-rose-600 hover:text-rose-800"
                   aria-label="Remove date"
                 >
                   Remove
@@ -152,7 +152,7 @@ export default function PlanForm({ quota }: PlanFormProps) {
           <button
             type="button"
             onClick={addDate}
-            className="mt-2 text-sm text-blue-600 hover:text-blue-800"
+            className="mt-2 text-sm text-teal-600 hover:text-teal-800"
           >
             + Add another date
           </button>
@@ -163,7 +163,7 @@ export default function PlanForm({ quota }: PlanFormProps) {
       <button
         type="submit"
         disabled={isSubmitting || !quota.canCreate}
-        className="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white shadow-md shadow-teal-600/20 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
         {isSubmitting ? 'Creating...' : 'Create Plan'}
       </button>

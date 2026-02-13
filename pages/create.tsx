@@ -39,7 +39,7 @@ export default function CreatePage() {
   if (!isLoaded) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500">Loading...</p>
+        <p className="text-slate-500">Loading...</p>
       </div>
     )
   }
@@ -47,28 +47,28 @@ export default function CreatePage() {
   if (!isSignedIn) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4">
-        <p className="text-gray-600">Sign in to create a plan</p>
+        <p className="text-slate-600">Sign in to create a plan</p>
         <LoginButton />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50/30">
+      <header className="bg-white/80 backdrop-blur-sm border-b border-slate-200">
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between gap-4 min-w-0">
-          <h1 className="text-lg font-semibold text-gray-900">Create a Plan</h1>
+          <h1 className="text-lg font-semibold text-slate-900">Create a Plan</h1>
           <LoginButton />
         </div>
       </header>
 
       <main id="main-content" className="max-w-3xl mx-auto px-4 py-8">
         {loading && (
-          <p className="text-center text-gray-500">Loading...</p>
+          <p className="text-center text-slate-500">Loading...</p>
         )}
 
         {error && (
-          <div className="max-w-lg mx-auto p-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-md">
+          <div className="max-w-lg mx-auto p-3 text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-lg">
             {error}
           </div>
         )}

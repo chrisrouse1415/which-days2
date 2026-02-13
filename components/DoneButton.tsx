@@ -41,7 +41,7 @@ export default function DoneButton({ participantId, isDone, onToggled }: DoneBut
         <button
           onClick={handleClick}
           disabled={loading}
-          className="w-full min-h-[44px] py-3 text-sm font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 disabled:opacity-50 transition-colors"
+          className="w-full min-h-[44px] py-3 text-sm font-medium text-violet-700 bg-violet-50 border border-violet-200 rounded-xl hover:bg-violet-100 disabled:opacity-50 transition-colors"
         >
           {loading ? 'Updating...' : 'Done — Edit my responses'}
         </button>
@@ -49,13 +49,13 @@ export default function DoneButton({ participantId, isDone, onToggled }: DoneBut
         <button
           onClick={handleClick}
           disabled={loading}
-          className="w-full min-h-[44px] py-3 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
+          className="w-full min-h-[44px] py-3 text-sm font-medium text-white bg-violet-600 rounded-xl shadow-md shadow-violet-600/20 hover:bg-violet-700 disabled:opacity-50 transition-colors"
         >
           {loading ? 'Updating...' : "I'm done"}
         </button>
       )}
       {error && (
-        <p className="mt-1 text-xs text-red-600" role="alert">{error}</p>
+        <p className="mt-1 text-xs text-rose-600" role="alert">{error}</p>
       )}
     </div>
   )

@@ -129,15 +129,15 @@ export default function PlanShare() {
   const myName = planData?.participants.find((p) => p.id === participantId)?.display_name
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50/30">
+      <header className="bg-white/80 backdrop-blur-sm border-b border-slate-200">
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between gap-4 min-w-0">
-          <Link href="/" className="text-lg font-semibold text-gray-900 hover:text-gray-700">
+          <Link href="/" className="text-lg font-semibold text-slate-900 hover:text-teal-600 transition-colors">
             Which Days
           </Link>
           {myName && (
-            <span className="text-sm text-gray-500">
-              Joined as <span className="font-medium text-gray-700">{myName}</span>
+            <span className="text-sm text-slate-500">
+              Joined as <span className="font-medium text-slate-700">{myName}</span>
             </span>
           )}
         </div>
@@ -146,11 +146,11 @@ export default function PlanShare() {
       <main id="main-content" className="max-w-3xl mx-auto px-4 py-8">
         {error ? (
           <div className="text-center py-16">
-            <p className="text-red-600">{error}</p>
+            <p className="text-rose-600">{error}</p>
           </div>
         ) : phase === 'loading' ? (
           <div className="text-center py-16">
-            <p className="text-gray-400">Loading plan...</p>
+            <p className="text-slate-400">Loading plan...</p>
           </div>
         ) : phase === 'join' && planData ? (
           <div className="py-8">
@@ -163,7 +163,7 @@ export default function PlanShare() {
         ) : phase === 'availability' && planData && participantId ? (
           <div className="space-y-6">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">{planData.plan.title}</h1>
+              <h1 className="text-2xl font-bold text-slate-900">{planData.plan.title}</h1>
             </div>
 
             {needsReview && (

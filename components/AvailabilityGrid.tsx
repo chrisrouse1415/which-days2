@@ -203,18 +203,18 @@ export default function AvailabilityGrid({
     const isLocked = planStatus === 'locked'
     return (
       <div className="space-y-3">
-        <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">
+        <h3 className="text-sm font-medium text-slate-500 uppercase tracking-wide">
           Your Availability
         </h3>
         <div
-          className={`border rounded-lg p-4 ${
+          className={`border rounded-xl p-4 ${
             isLocked
-              ? 'bg-blue-50 border-blue-200'
-              : 'bg-gray-50 border-gray-200'
+              ? 'bg-teal-50 border-teal-200'
+              : 'bg-slate-50 border-slate-200'
           }`}
           role="alert"
         >
-          <p className={`text-sm font-medium ${isLocked ? 'text-blue-800' : 'text-gray-600'}`}>
+          <p className={`text-sm font-medium ${isLocked ? 'text-teal-800' : 'text-slate-600'}`}>
             {isLocked
               ? 'This plan is locked — no more changes allowed.'
               : 'This plan has been deleted.'}
@@ -226,11 +226,11 @@ export default function AvailabilityGrid({
 
   return (
     <div className="space-y-3">
-      <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">
+      <h3 className="text-sm font-medium text-slate-500 uppercase tracking-wide">
         Your Availability
       </h3>
 
-      <div className="divide-y divide-gray-200 border border-gray-200 rounded-lg overflow-hidden">
+      <div className="divide-y divide-slate-200 border border-slate-200 rounded-xl overflow-hidden shadow-sm">
         {availabilitySummary.map((date) => {
           const dateStatus = getDateStatus(date)
           const myStatus = getMyStatus(date.planDateId)
@@ -243,19 +243,19 @@ export default function AvailabilityGrid({
             <div
               key={date.planDateId}
               className={`flex flex-row items-center justify-between gap-2 px-4 py-3 ${
-                isEliminated ? 'bg-gray-50' : 'bg-white'
+                isEliminated ? 'bg-slate-50' : 'bg-white'
               }`}
             >
               <div className="flex items-center gap-3 min-w-0">
                 <span
                   className={`text-sm font-medium ${
-                    isEliminated ? 'text-gray-400 line-through' : 'text-gray-900'
+                    isEliminated ? 'text-slate-400 line-through' : 'text-slate-900'
                   }`}
                 >
                   {formatDate(date.date)}
                 </span>
                 {date.unavailableBy.length > 0 && (
-                  <span className="text-xs text-gray-400">
+                  <span className="text-xs text-slate-400">
                     {date.unavailableBy.map((u) => u.displayName).join(', ')} can&apos;t
                   </span>
                 )}
@@ -263,7 +263,7 @@ export default function AvailabilityGrid({
 
               <div>
                 {isLocked ? (
-                  <span className="text-xs text-gray-400">Locked</span>
+                  <span className="text-xs text-slate-400">Locked</span>
                 ) : undoEntry ? (
                   <UndoTimer
                     deadline={undoEntry.deadline}
@@ -271,14 +271,14 @@ export default function AvailabilityGrid({
                     onUndo={() => handleUndo(date.planDateId, undoEntry.eventLogId)}
                   />
                 ) : myStatus === 'unavailable' ? (
-                  <span className="text-xs text-gray-400">Marked unavailable</span>
+                  <span className="text-xs text-slate-400">Marked unavailable</span>
                 ) : eliminatedByOthers ? (
-                  <span className="text-xs text-gray-400">Eliminated</span>
+                  <span className="text-xs text-slate-400">Eliminated</span>
                 ) : (
                   <button
                     onClick={() => handleToggle(date.planDateId)}
                     disabled={togglingIds.has(date.planDateId)}
-                    className="px-4 py-2 min-h-[44px] text-sm font-medium text-red-600 bg-white border border-red-200 rounded-md hover:bg-red-50 disabled:opacity-50 transition-colors"
+                    className="px-4 py-2 min-h-[44px] text-sm font-medium text-rose-600 bg-white border border-rose-200 rounded-lg hover:bg-rose-50 disabled:opacity-50 transition-colors"
                   >
                     I can&apos;t do this day
                   </button>

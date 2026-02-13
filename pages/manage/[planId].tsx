@@ -106,17 +106,17 @@ export default function ManagePlan() {
 
   if (!isLoaded || loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-400">Loading...</p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50/30 flex items-center justify-center">
+        <p className="text-slate-400">Loading...</p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50/30">
+      <header className="bg-white/80 backdrop-blur-sm border-b border-slate-200">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between gap-4 min-w-0">
-          <Link href="/dashboard" className="text-lg font-semibold text-gray-900 hover:text-gray-700">
+          <Link href="/dashboard" className="text-lg font-semibold text-slate-900 hover:text-teal-600 transition-colors">
             Which Days
           </Link>
           <LoginButton />
@@ -126,8 +126,8 @@ export default function ManagePlan() {
       <main id="main-content" className="max-w-4xl mx-auto px-4 py-8">
         {error ? (
           <div className="text-center py-16">
-            <p className="text-red-600 mb-4">{error}</p>
-            <Link href="/dashboard" className="text-sm text-blue-600 hover:text-blue-800">
+            <p className="text-rose-600 mb-4">{error}</p>
+            <Link href="/dashboard" className="text-sm text-teal-600 hover:text-teal-800">
               Back to dashboard
             </Link>
           </div>
@@ -135,8 +135,8 @@ export default function ManagePlan() {
           <div className="space-y-6">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">{data.plan.title}</h1>
-                <p className="text-sm text-gray-500 mt-1">
+                <h1 className="text-2xl font-bold text-slate-900">{data.plan.title}</h1>
+                <p className="text-sm text-slate-500 mt-1">
                   {data.participants.length} participant{data.participants.length !== 1 ? 's' : ''}
                   {data.participants.length > 0 && (
                     <span>
@@ -146,12 +146,12 @@ export default function ManagePlan() {
                 </p>
               </div>
               <span
-                className={`shrink-0 inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
+                className={`shrink-0 inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${
                   data.plan.status === 'active'
-                    ? 'bg-green-100 text-green-800'
+                    ? 'bg-emerald-100 text-emerald-800'
                     : data.plan.status === 'locked'
-                    ? 'bg-gray-100 text-gray-600'
-                    : 'bg-red-100 text-red-600'
+                    ? 'bg-slate-100 text-slate-600'
+                    : 'bg-rose-100 text-rose-600'
                 }`}
               >
                 {data.plan.status}
@@ -159,14 +159,14 @@ export default function ManagePlan() {
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">
+              <h3 className="text-sm font-medium text-slate-500 uppercase tracking-wide">
                 Share Link
               </h3>
               <ShareLink shareId={data.plan.share_id} />
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">
+              <h3 className="text-sm font-medium text-slate-500 uppercase tracking-wide">
                 Plan Controls
               </h3>
               <PlanStatusControls
@@ -177,7 +177,7 @@ export default function ManagePlan() {
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">
+              <h3 className="text-sm font-medium text-slate-500 uppercase tracking-wide">
                 Results
               </h3>
               <ResultsMatrix
@@ -190,8 +190,8 @@ export default function ManagePlan() {
               />
             </div>
 
-            <div className="pt-4 border-t border-gray-200">
-              <Link href="/dashboard" className="text-sm text-blue-600 hover:text-blue-800">
+            <div className="pt-4 border-t border-slate-200">
+              <Link href="/dashboard" className="text-sm text-teal-600 hover:text-teal-800">
                 &larr; Back to dashboard
               </Link>
             </div>
