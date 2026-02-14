@@ -180,6 +180,7 @@ export default function PlanShare() {
               planId={planData.plan.id}
               shareId={shareId!}
               planStatus={planData.plan.status}
+              isDone={isDone}
               availabilitySummary={planData.availabilitySummary}
               myAvailability={planData.myAvailability ?? []}
               onDataRefresh={handleDataRefresh}

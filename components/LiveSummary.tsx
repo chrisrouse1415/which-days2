@@ -71,17 +71,6 @@ export default function LiveSummary({
           </div>
         )}
 
-        {doneCount === participantCount &&
-          participantCount > 0 &&
-          viableDates.length > 0 && (
-            <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3" role="alert">
-              <p className="text-sm font-medium text-emerald-800">
-                Everyone&apos;s done! {viableDates.length} date{viableDates.length !== 1 ? 's' : ''} work
-                {viableDates.length === 1 ? 's' : ''} for the group.
-              </p>
-            </div>
-          )}
-
         {viableDates.length > 0 && (
           <div>
             <p className="text-xs font-medium text-emerald-700 mb-1">

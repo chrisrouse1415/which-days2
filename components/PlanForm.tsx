@@ -1,5 +1,6 @@
 import { useState, FormEvent } from 'react'
 import { useRouter } from 'next/router'
+import DatePicker from './DatePicker'
 
 interface QuotaInfo {
   activePlanCount: number
@@ -8,31 +9,26 @@ interface QuotaInfo {
 }
 
 interface PlanFormProps {
-  quota: QuotaInfo
+  quota?: QuotaInfo
+  mode?: 'create' | 'edit'
+  planId?: string
+  initialTitle?: string
+  initialDates?: string[]
 }
 
-export default function PlanForm({ quota }: PlanFormProps) {
+export default function PlanForm({
+  quota,
+  mode = 'create',
+  planId,
+  initialTitle = '',
+  initialDates = [],
+}: PlanFormProps) {
   const router = useRouter()
-  const [title, setTitle] = useState('')
-  const [dates, setDates] = useState<string[]>([''])
+  const isEdit = mode === 'edit'
+  const [title, setTitle] = useState(initialTitle)
+  const [dates, setDates] = useState<string[]>(initialDates)
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
-
-  function addDate() {
-    if (dates.length >= 30) return
-    setDates([...dates, ''])
-  }
-
-  function removeDate(index: number) {
-    if (dates.length <= 1) return
-    setDates(dates.filter((_, i) => i !== index))
-  }
-
-  function updateDate(index: number, value: string) {
-    const updated = [...dates]
-    updated[index] = value
-    setDates(updated)
-  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -45,19 +41,14 @@ export default function PlanForm({ quota }: PlanFormProps) {
       return
     }
 
-    const filledDates = dates.filter((d) => d !== '')
-    if (filledDates.length === 0) {
+    if (dates.length === 0) {
       setError('At least one date is required')
       return
     }
 
-    const uniqueDates = Array.from(new Set(filledDates))
-    if (uniqueDates.length !== filledDates.length) {
-      setError('Duplicate dates are not allowed')
-      return
-    }
+    const uniqueDates = Array.from(new Set(dates))
 
-    if (!quota.canCreate) {
+    if (!isEdit && quota && !quota.canCreate) {
       setError(`You've reached the limit of ${quota.maxPlans} active plans`)
       return
     }
@@ -65,20 +56,37 @@ export default function PlanForm({ quota }: PlanFormProps) {
     setIsSubmitting(true)
 
     try {
-      const res = await fetch('/api/plans/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: trimmedTitle, dates: uniqueDates }),
-      })
+      if (isEdit) {
+        const res = await fetch(`/api/plans/manage?planId=${planId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: trimmedTitle, dates: uniqueDates }),
+        })
 
-      const data = await res.json()
+        const data = await res.json()
 
-      if (!res.ok) {
-        setError(data.error || 'Failed to create plan')
-        return
+        if (!res.ok) {
+          setError(data.error || 'Failed to save changes')
+          return
+        }
+
+        router.push(`/manage/${planId}`)
+      } else {
+        const res = await fetch('/api/plans/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: trimmedTitle, dates: uniqueDates }),
+        })
+
+        const data = await res.json()
+
+        if (!res.ok) {
+          setError(data.error || 'Failed to create plan')
+          return
+        }
+
+        router.push(data.manageUrl)
       }
-
-      router.push(data.manageUrl)
     } catch {
       setError('Network error. Please try again.')
     } finally {
@@ -88,15 +96,17 @@ export default function PlanForm({ quota }: PlanFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="max-w-lg mx-auto space-y-6">
-      {/* Quota indicator */}
-      <div className="text-sm text-slate-500">
-        Active plans: {quota.activePlanCount} / {quota.maxPlans}
-        {!quota.canCreate && (
-          <span className="ml-2 text-rose-600 font-medium">
-            Limit reached
-          </span>
-        )}
-      </div>
+      {/* Quota indicator (create mode only) */}
+      {!isEdit && quota && (
+        <div className="text-sm text-slate-500">
+          Active plans: {quota.activePlanCount} / {quota.maxPlans}
+          {!quota.canCreate && (
+            <span className="ml-2 text-rose-600 font-medium">
+              Limit reached
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Error message */}
       {error && (
@@ -126,46 +136,18 @@ export default function PlanForm({ quota }: PlanFormProps) {
         <label className="block text-sm font-medium text-slate-700 mb-2">
           Dates
         </label>
-        <div className="space-y-2">
-          {dates.map((date, index) => (
-            <div key={index} className="flex items-center gap-2">
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => updateDate(index, e.target.value)}
-                className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
-              />
-              {dates.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => removeDate(index)}
-                  className="px-2 py-2 text-sm text-rose-600 hover:text-rose-800"
-                  aria-label="Remove date"
-                >
-                  Remove
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
-        {dates.length < 30 && (
-          <button
-            type="button"
-            onClick={addDate}
-            className="mt-2 text-sm text-teal-600 hover:text-teal-800"
-          >
-            + Add another date
-          </button>
-        )}
+        <DatePicker selectedDates={dates} onChange={setDates} maxDates={30} />
       </div>
 
       {/* Submit */}
       <button
         type="submit"
-        disabled={isSubmitting || !quota.canCreate}
+        disabled={isSubmitting || (!isEdit && quota && !quota.canCreate)}
         className="w-full rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white shadow-md shadow-teal-600/20 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
-        {isSubmitting ? 'Creating...' : 'Create Plan'}
+        {isSubmitting
+          ? (isEdit ? 'Saving...' : 'Creating...')
+          : (isEdit ? 'Save Changes' : 'Create Plan')}
       </button>
     </form>
   )

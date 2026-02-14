@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react'
 import { useUser } from '@clerk/nextjs'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
-import LoginButton from '../../components/LoginButton'
-import ShareLink from '../../components/ShareLink'
-import PlanStatusControls from '../../components/PlanStatusControls'
-import ResultsMatrix from '../../components/ResultsMatrix'
+import LoginButton from '../../../components/LoginButton'
+import ShareLink from '../../../components/ShareLink'
+import PlanStatusControls from '../../../components/PlanStatusControls'
+import ResultsMatrix from '../../../components/ResultsMatrix'
 
 interface PlanDate {
   id: string
@@ -135,7 +135,17 @@ export default function ManagePlan() {
           <div className="space-y-6">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h1 className="text-2xl font-bold text-slate-900">{data.plan.title}</h1>
+                <div className="flex items-center gap-3">
+                  <h1 className="text-2xl font-bold text-slate-900">{data.plan.title}</h1>
+                  {data.plan.status === 'active' && (
+                    <Link
+                      href={`/manage/${planId}/edit`}
+                      className="text-sm text-teal-600 hover:text-teal-800 font-medium transition-colors"
+                    >
+                      Edit Plan
+                    </Link>
+                  )}
+                </div>
                 <p className="text-sm text-slate-500 mt-1">
                   {data.participants.length} participant{data.participants.length !== 1 ? 's' : ''}
                   {data.participants.length > 0 && (
@@ -173,6 +183,7 @@ export default function ManagePlan() {
                 planId={data.plan.id}
                 currentStatus={data.plan.status}
                 onStatusChanged={handleStatusChanged}
+                onDataRefresh={handleDataRefresh}
               />
             </div>
 
