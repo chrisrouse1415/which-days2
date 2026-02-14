@@ -15,6 +15,7 @@ interface PlanData {
     title: string
     status: string
   }
+  ownerName: string | null
   dates: Array<{
     id: string
     plan_id: string
@@ -129,11 +130,11 @@ export default function PlanShare() {
   const myName = planData?.participants.find((p) => p.id === participantId)?.display_name
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50/30">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50/30 bg-question-pattern">
       <header className="bg-white/80 backdrop-blur-sm border-b border-slate-200">
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between gap-4 min-w-0">
           <Link href="/" className="text-lg font-semibold text-slate-900 hover:text-teal-600 transition-colors">
-            Which Days
+            Which Days?
           </Link>
           {myName && (
             <span className="text-sm text-slate-500">
@@ -157,6 +158,7 @@ export default function PlanShare() {
             <JoinForm
               shareId={shareId!}
               planTitle={planData.plan.title}
+              ownerName={planData.ownerName}
               onJoined={handleJoined}
             />
           </div>

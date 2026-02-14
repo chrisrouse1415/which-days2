@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { getPlanByShareId, PlanNotFoundError } from '../../../lib/participants'
 import { getParticipantAvailability, getPlanAvailabilitySummary } from '../../../lib/availability'
+import { supabaseAdmin } from '../../../lib/supabase-admin'
 import { logger } from '../../../lib/logger'
 import { checkRateLimit } from '../../../lib/rate-limit'
 
@@ -20,6 +21,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     const { plan, dates, participants } = await getPlanByShareId(shareId)
+
+    // Fetch owner's first name
+    const { data: owner } = await supabaseAdmin
+      .from('users')
+      .select('first_name')
+      .eq('clerk_id', plan.owner_clerk_id)
+      .single()
 
     const summary = await getPlanAvailabilitySummary(plan.id)
 
@@ -45,6 +53,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     return res.status(200).json({
       plan,
+      ownerName: owner?.first_name || null,
       dates,
       participants: safeParticipants,
       availabilitySummary: summary,

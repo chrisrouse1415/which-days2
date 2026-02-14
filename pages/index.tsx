@@ -6,10 +6,10 @@ export default function Home() {
   const { isSignedIn, isLoaded } = useUser()
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50/30">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50/30 bg-question-pattern">
       <header className="bg-white/80 backdrop-blur-sm border-b border-slate-200">
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between gap-4 min-w-0">
-          <h1 className="text-lg font-semibold text-slate-900">Which Days</h1>
+          <h1 className="text-lg font-semibold text-slate-900">Which Days?</h1>
           <LoginButton />
         </div>
       </header>

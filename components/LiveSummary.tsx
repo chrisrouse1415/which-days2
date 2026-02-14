@@ -42,7 +42,7 @@ export default function LiveSummary({
 
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-medium text-slate-500 uppercase tracking-wide">Summary</h3>
+      <h3 className="text-sm font-medium text-slate-500 uppercase tracking-wide"><span role="img" aria-label="Summary">📊</span> Summary</h3>
 
       <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3 shadow-sm">
         <div className="text-sm text-slate-600 space-y-1">
@@ -58,7 +58,7 @@ export default function LiveSummary({
           )}
           {notDoneNames.length > 0 && (
             <p className="text-xs text-slate-400">
-              Waiting on: {notDoneNames.join(', ')}
+              Waiting for: {notDoneNames.join(', ')}
             </p>
           )}
         </div>

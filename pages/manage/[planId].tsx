@@ -113,11 +113,11 @@ export default function ManagePlan() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50/30">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50/30 bg-question-pattern">
       <header className="bg-white/80 backdrop-blur-sm border-b border-slate-200">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between gap-4 min-w-0">
           <Link href="/dashboard" className="text-lg font-semibold text-slate-900 hover:text-teal-600 transition-colors">
-            Which Days
+            Which Days?
           </Link>
           <LoginButton />
         </div>
