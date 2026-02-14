@@ -41,30 +41,6 @@ function formatDate(dateStr: string): string {
   })
 }
 
-function StatusBadge({ status }: { status: string }) {
-  if (status === 'viable' || status === 'reopened') {
-    return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-        viable
-      </span>
-    )
-  }
-  if (status === 'eliminated') {
-    return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
-        eliminated
-      </span>
-    )
-  }
-  if (status === 'locked') {
-    return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
-        locked
-      </span>
-    )
-  }
-  return null
-}
 
 export default function AvailabilityGrid({
   participantId,
@@ -266,7 +242,7 @@ export default function AvailabilityGrid({
           return (
             <div
               key={date.planDateId}
-              className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-4 py-3 ${
+              className={`flex flex-row items-center justify-between gap-2 px-4 py-3 ${
                 isEliminated ? 'bg-gray-50' : 'bg-white'
               }`}
             >
@@ -278,7 +254,6 @@ export default function AvailabilityGrid({
                 >
                   {formatDate(date.date)}
                 </span>
-                <StatusBadge status={dateStatus} />
                 {date.unavailableBy.length > 0 && (
                   <span className="text-xs text-gray-400">
                     {date.unavailableBy.map((u) => u.displayName).join(', ')} can&apos;t
