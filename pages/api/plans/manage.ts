@@ -4,6 +4,8 @@ import {
   getPlanForOwner,
   getAvailabilityMatrix,
   updatePlanStatus,
+  editPlan,
+  resetPlan,
   PlanNotFoundError,
   NotOwnerError,
   ValidationError,
@@ -27,14 +29,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     if (req.method === 'PATCH') {
-      const { status } = req.body
+      const { status, title, dates, reset } = req.body
 
-      if (status !== 'locked' && status !== 'deleted') {
-        return res.status(400).json({ error: 'Status must be "locked" or "deleted"' })
+      if (reset === true) {
+        const result = await resetPlan(planId, userId)
+        const { matrix } = await getAvailabilityMatrix(planId)
+        return res.status(200).json({ ...result, matrix })
       }
 
-      const result = await updatePlanStatus(planId, userId, status)
-      return res.status(200).json(result)
+      if (status) {
+        if (status !== 'locked' && status !== 'deleted') {
+          return res.status(400).json({ error: 'Status must be "locked" or "deleted"' })
+        }
+        const result = await updatePlanStatus(planId, userId, status)
+        return res.status(200).json(result)
+      }
+
+      if (title !== undefined || dates !== undefined) {
+        const result = await editPlan(planId, userId, { title, dates })
+        return res.status(200).json(result)
+      }
+
+      return res.status(400).json({ error: 'No valid fields provided' })
     }
 
     return res.status(405).json({ error: 'Method not allowed' })

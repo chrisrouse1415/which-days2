@@ -166,6 +166,21 @@ export async function toggleDone(participantId: string) {
     throw updateErr
   }
 
+  // When marking done, expire all active undo deadlines for this participant
+  // so eliminated dates stay eliminated permanently
+  if (newIsDone) {
+    const { error: expireErr } = await supabaseAdmin
+      .from('event_log')
+      .update({ undo_deadline: null })
+      .eq('participant_id', participantId)
+      .gt('undo_deadline', new Date().toISOString())
+
+    if (expireErr) {
+      logger.error('Error expiring undo deadlines on done', { participantId }, expireErr)
+      // Non-fatal — don't throw, the done toggle already succeeded
+    }
+  }
+
   // Log event
   await supabaseAdmin.from('event_log').insert({
     plan_id: participant.plan_id,

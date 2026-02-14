@@ -49,8 +49,8 @@ export default function Dashboard() {
 
   if (!isLoaded) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-400">Loading...</p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50/30 flex items-center justify-center">
+        <p className="text-slate-400">Loading...</p>
       </div>
     )
   }
@@ -59,11 +59,11 @@ export default function Dashboard() {
   const maxPlans = 3
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50/30 bg-question-pattern">
+      <header className="bg-white/80 backdrop-blur-sm border-b border-slate-200">
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between gap-4 min-w-0">
-          <Link href="/" className="text-lg font-semibold text-gray-900 hover:text-gray-700">
-            Which Days
+          <Link href="/" className="text-lg font-semibold text-slate-900 hover:text-teal-600 transition-colors">
+            Which Days?
           </Link>
           <LoginButton />
         </div>
@@ -71,15 +71,15 @@ export default function Dashboard() {
 
       <main id="main-content" className="max-w-3xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">My Plans</h1>
+          <h1 className="text-2xl font-bold text-slate-900">My Plans</h1>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-500">
+            <span className="text-sm text-slate-500">
               {activePlans.length}/{maxPlans} active
             </span>
             {activePlans.length < maxPlans && (
               <Link
                 href="/create"
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
+                className="px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-lg shadow-md shadow-teal-600/20 hover:bg-teal-700 transition-colors"
               >
                 Create a Plan
               </Link>
@@ -88,15 +88,15 @@ export default function Dashboard() {
         </div>
 
         {error ? (
-          <p className="text-red-600 text-center py-8">{error}</p>
+          <p className="text-rose-600 text-center py-8">{error}</p>
         ) : loading ? (
-          <p className="text-gray-400 text-center py-8">Loading plans...</p>
+          <p className="text-slate-400 text-center py-8">Loading plans...</p>
         ) : plans.length === 0 ? (
           <div className="text-center py-16">
-            <p className="text-gray-500 mb-4">You haven&apos;t created any plans yet.</p>
+            <p className="text-slate-500 mb-4">You haven&apos;t created any plans yet.</p>
             <Link
               href="/create"
-              className="inline-block px-6 py-3 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+              className="inline-block px-6 py-3 text-sm font-medium text-white bg-teal-600 rounded-lg shadow-md shadow-teal-600/20 hover:bg-teal-700 transition-colors"
             >
               Create your first plan
             </Link>
@@ -107,12 +107,12 @@ export default function Dashboard() {
               <Link
                 key={plan.id}
                 href={`/manage/${plan.id}`}
-                className="block bg-white border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors"
+                className="block bg-white border border-slate-200 rounded-xl p-4 hover:border-teal-300 hover:shadow-sm transition-all"
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-base font-medium text-gray-900">{plan.title}</h2>
-                    <p className="text-sm text-gray-500 mt-1">
+                    <h2 className="text-base font-medium text-slate-900">{plan.title}</h2>
+                    <p className="text-sm text-slate-500 mt-1">
                       {plan.participantCount} participant{plan.participantCount !== 1 ? 's' : ''}
                       {plan.participantCount > 0 && (
                         <span>
@@ -122,10 +122,10 @@ export default function Dashboard() {
                     </p>
                   </div>
                   <span
-                    className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
+                    className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${
                       plan.status === 'active'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-gray-100 text-gray-600'
+                        ? 'bg-emerald-100 text-emerald-800'
+                        : 'bg-slate-100 text-slate-600'
                     }`}
                   >
                     {plan.status}

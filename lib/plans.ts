@@ -17,12 +17,17 @@ export class ValidationError extends Error {
   }
 }
 
-interface CreatePlanInput {
+interface PlanInput {
   title: string
   dates: string[] // ISO date strings (YYYY-MM-DD)
 }
 
-export async function createPlan(ownerClerkId: string, input: CreatePlanInput) {
+interface EditPlanInput {
+  title?: string
+  dates?: string[]
+}
+
+export async function createPlan(ownerClerkId: string, input: PlanInput) {
   const { title, dates } = input
 
   // Validate title
@@ -308,6 +313,207 @@ export async function updatePlanStatus(
   })
 
   return { status }
+}
+
+export async function editPlan(planId: string, clerkId: string, input: EditPlanInput) {
+  // Verify ownership + active status
+  const { data: plan, error: planErr } = await supabaseAdmin
+    .from('plans')
+    .select()
+    .eq('id', planId)
+    .single()
+
+  if (planErr || !plan) {
+    throw new PlanNotFoundError()
+  }
+
+  if (plan.owner_clerk_id !== clerkId) {
+    throw new NotOwnerError()
+  }
+
+  if (plan.status !== 'active') {
+    throw new ValidationError('Only active plans can be edited')
+  }
+
+  const { title, dates } = input
+
+  // Validate title if provided
+  if (title !== undefined) {
+    const trimmedTitle = title.trim()
+    if (!trimmedTitle) {
+      throw new ValidationError('Title is required')
+    }
+    if (trimmedTitle.length > 100) {
+      throw new ValidationError('Title must be 100 characters or fewer')
+    }
+
+    const { error: titleErr } = await supabaseAdmin
+      .from('plans')
+      .update({ title: trimmedTitle, updated_at: new Date().toISOString() })
+      .eq('id', planId)
+
+    if (titleErr) {
+      logger.error('Error updating plan title', { planId, userId: clerkId }, titleErr)
+      throw titleErr
+    }
+  }
+
+  // Diff and update dates if provided
+  let datesChanged = false
+  if (dates !== undefined) {
+    // Validate dates
+    if (!dates || dates.length === 0) {
+      throw new ValidationError('At least one date is required')
+    }
+    if (dates.length > 30) {
+      throw new ValidationError('Maximum 30 dates allowed')
+    }
+
+    const uniqueDates = Array.from(new Set(dates))
+    if (uniqueDates.length !== dates.length) {
+      throw new ValidationError('Duplicate dates are not allowed')
+    }
+
+    for (const date of uniqueDates) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        throw new ValidationError(`Invalid date format: ${date}`)
+      }
+      const parsed = new Date(date + 'T00:00:00')
+      if (isNaN(parsed.getTime())) {
+        throw new ValidationError(`Invalid date: ${date}`)
+      }
+    }
+
+    // Fetch current dates
+    const { data: currentDates, error: cdErr } = await supabaseAdmin
+      .from('plan_dates')
+      .select()
+      .eq('plan_id', planId)
+
+    if (cdErr) {
+      logger.error('Error fetching current plan dates', { planId }, cdErr)
+      throw cdErr
+    }
+
+    const currentDateStrings = new Set((currentDates ?? []).map((d) => d.date))
+    const newDateStrings = new Set(uniqueDates)
+
+    // Dates to remove: in current but not in new
+    const datesToRemove = (currentDates ?? []).filter((d) => !newDateStrings.has(d.date))
+    // Dates to add: in new but not in current
+    const datesToAdd = uniqueDates.filter((d) => !currentDateStrings.has(d))
+
+    if (datesToRemove.length > 0 || datesToAdd.length > 0) {
+      datesChanged = true
+
+      // Remove dates (availability cascades via ON DELETE CASCADE)
+      if (datesToRemove.length > 0) {
+        const removeIds = datesToRemove.map((d) => d.id)
+        const { error: delErr } = await supabaseAdmin
+          .from('plan_dates')
+          .delete()
+          .in('id', removeIds)
+
+        if (delErr) {
+          logger.error('Error removing plan dates', { planId, removeIds }, delErr)
+          throw delErr
+        }
+      }
+
+      // Add new dates
+      if (datesToAdd.length > 0) {
+        const dateRows = datesToAdd.sort().map((date) => ({
+          plan_id: planId,
+          date,
+        }))
+
+        const { error: insErr } = await supabaseAdmin
+          .from('plan_dates')
+          .insert(dateRows)
+
+        if (insErr) {
+          logger.error('Error inserting new plan dates', { planId }, insErr)
+          throw insErr
+        }
+      }
+
+      // Flag done participants as needs_review
+      const { error: flagErr } = await supabaseAdmin
+        .from('participants')
+        .update({ needs_review: true, updated_at: new Date().toISOString() })
+        .eq('plan_id', planId)
+        .eq('is_done', true)
+
+      if (flagErr) {
+        logger.error('Error flagging participants for review after edit', { planId }, flagErr)
+        throw flagErr
+      }
+    }
+  }
+
+  // Log event
+  await supabaseAdmin.from('event_log').insert({
+    plan_id: planId,
+    event_type: 'plan_edited',
+    metadata: {
+      titleChanged: title !== undefined,
+      datesChanged,
+    },
+  })
+
+  return getPlanForOwner(planId, clerkId)
+}
+
+export async function resetPlan(planId: string, clerkId: string) {
+  // Verify ownership + active status
+  const { data: plan, error: planErr } = await supabaseAdmin
+    .from('plans')
+    .select()
+    .eq('id', planId)
+    .single()
+
+  if (planErr || !plan) {
+    throw new PlanNotFoundError()
+  }
+
+  if (plan.owner_clerk_id !== clerkId) {
+    throw new NotOwnerError()
+  }
+
+  if (plan.status !== 'active') {
+    throw new ValidationError('Only active plans can be reset')
+  }
+
+  // Delete all participants (availability cascades via ON DELETE CASCADE)
+  const { error: delErr } = await supabaseAdmin
+    .from('participants')
+    .delete()
+    .eq('plan_id', planId)
+
+  if (delErr) {
+    logger.error('Error deleting participants during reset', { planId }, delErr)
+    throw delErr
+  }
+
+  // Reset all plan_dates back to viable
+  const { error: dateErr } = await supabaseAdmin
+    .from('plan_dates')
+    .update({ status: 'viable' as const, reopen_version: 0, updated_at: new Date().toISOString() })
+    .eq('plan_id', planId)
+
+  if (dateErr) {
+    logger.error('Error resetting plan dates during reset', { planId }, dateErr)
+    throw dateErr
+  }
+
+  // Log event
+  await supabaseAdmin.from('event_log').insert({
+    plan_id: planId,
+    event_type: 'plan_reset',
+    metadata: {},
+  })
+
+  return getPlanForOwner(planId, clerkId)
 }
 
 export async function forceReopenDate(planId: string, planDateId: string, clerkId: string) {

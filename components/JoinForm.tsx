@@ -3,10 +3,11 @@ import { useState, FormEvent } from 'react'
 interface JoinFormProps {
   shareId: string
   planTitle: string
+  ownerName: string | null
   onJoined: (participantId: string) => void
 }
 
-export default function JoinForm({ shareId, planTitle, onJoined }: JoinFormProps) {
+export default function JoinForm({ shareId, planTitle, ownerName, onJoined }: JoinFormProps) {
   const [displayName, setDisplayName] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -55,17 +56,23 @@ export default function JoinForm({ shareId, planTitle, onJoined }: JoinFormProps
 
   return (
     <div className="max-w-md mx-auto">
-      <h2 className="text-xl font-semibold text-gray-900 mb-6">Join {planTitle}?</h2>
+      <div className="text-center mb-4">
+        <span className="text-5xl" role="img" aria-label="Calendar">🗓️</span>
+      </div>
+      <h2 className="text-2xl font-semibold text-slate-900 mb-1 text-center">
+        Join {ownerName ? `${ownerName}\u2019s` : 'this'} plan?
+      </h2>
+      <p className="text-lg text-slate-500 mb-6 text-center">{planTitle}</p>
 
       {error && (
-        <div className="mb-4 p-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-md">
+        <div className="mb-4 p-3 text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-lg">
           {error}
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="displayName" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="displayName" className="block text-sm font-medium text-slate-700">
             Your name
           </label>
           <input
@@ -76,14 +83,14 @@ export default function JoinForm({ shareId, planTitle, onJoined }: JoinFormProps
             maxLength={50}
             placeholder="e.g. Chris"
             autoFocus
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
           />
         </div>
 
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white shadow-md shadow-teal-600/20 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {isSubmitting ? 'Joining...' : 'Join Plan'}
         </button>
