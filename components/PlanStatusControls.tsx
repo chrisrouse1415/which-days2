@@ -79,7 +79,7 @@ export default function PlanStatusControls({
     return (
       <div>
         <div className="flex items-center gap-3">
-          <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-700">
+          <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-50 text-slate-600 ring-1 ring-slate-200">
             Locked
           </span>
           <button
@@ -87,7 +87,7 @@ export default function PlanStatusControls({
               setConfirmDelete(true)
             }}
             disabled={loading !== null}
-            className="px-3 py-1.5 text-sm font-medium text-rose-600 border border-rose-200 rounded-lg hover:bg-rose-50 disabled:opacity-50 transition-colors"
+            className="px-3 py-1.5 text-sm font-semibold text-rose-600 border border-rose-200/60 rounded-xl hover:bg-rose-50 disabled:opacity-50 transition-all"
           >
             Delete Plan
           </button>
@@ -97,13 +97,13 @@ export default function PlanStatusControls({
               <button
                 onClick={() => handleStatusChange('deleted')}
                 disabled={loading !== null}
-                className="px-2 py-1 text-xs font-medium text-white bg-rose-600 rounded-md hover:bg-rose-700 disabled:opacity-50"
+                className="px-2.5 py-1 text-xs font-semibold text-white bg-rose-600 rounded-lg hover:bg-rose-700 disabled:opacity-50 transition-all"
               >
                 {loading === 'deleted' ? 'Deleting...' : 'Yes, delete'}
               </button>
               <button
                 onClick={() => setConfirmDelete(false)}
-                className="px-2 py-1 text-xs font-medium text-slate-600 border border-slate-200 rounded-md hover:bg-slate-50"
+                className="px-2.5 py-1 text-xs font-semibold text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-all"
               >
                 Cancel
               </button>
@@ -119,11 +119,11 @@ export default function PlanStatusControls({
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2.5">
         <button
           onClick={() => handleStatusChange('locked')}
           disabled={loading !== null}
-          className="px-3 py-1.5 text-sm font-medium text-slate-700 border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 transition-colors"
+          className="px-3.5 py-1.5 text-sm font-semibold text-slate-600 border border-slate-200/60 rounded-xl hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50 transition-all"
         >
           {loading === 'locked' ? 'Locking...' : 'Lock Plan'}
         </button>
@@ -133,7 +133,7 @@ export default function PlanStatusControls({
             setConfirmDelete(true)
           }}
           disabled={loading !== null}
-          className="px-3 py-1.5 text-sm font-medium text-rose-600 border border-rose-200 rounded-lg hover:bg-rose-50 disabled:opacity-50 transition-colors"
+          className="px-3.5 py-1.5 text-sm font-semibold text-rose-600 border border-rose-200/60 rounded-xl hover:bg-rose-50 disabled:opacity-50 transition-all"
         >
           Delete Plan
         </button>
@@ -143,31 +143,31 @@ export default function PlanStatusControls({
             setConfirmReset(true)
           }}
           disabled={loading !== null}
-          className="px-3 py-1.5 text-sm font-medium text-amber-700 border border-amber-200 rounded-lg hover:bg-amber-50 disabled:opacity-50 transition-colors"
+          className="px-3.5 py-1.5 text-sm font-semibold text-amber-700 border border-amber-200/60 rounded-xl hover:bg-amber-50 disabled:opacity-50 transition-all"
         >
           Reset Plan
         </button>
       </div>
       {confirmDelete && (
-        <div className="flex items-center gap-2 p-3 bg-rose-50 border border-rose-200 rounded-lg">
+        <div className="flex items-center gap-2 p-3.5 bg-rose-50/80 border border-rose-200/60 rounded-xl">
           <span className="text-sm text-rose-600">Are you sure?</span>
           <button
             onClick={() => handleStatusChange('deleted')}
             disabled={loading !== null}
-            className="px-2 py-1 text-xs font-medium text-white bg-rose-600 rounded-md hover:bg-rose-700 disabled:opacity-50"
+            className="px-2.5 py-1 text-xs font-semibold text-white bg-rose-600 rounded-lg hover:bg-rose-700 disabled:opacity-50 transition-all"
           >
             {loading === 'deleted' ? 'Deleting...' : 'Yes, delete'}
           </button>
           <button
             onClick={() => setConfirmDelete(false)}
-            className="px-2 py-1 text-xs font-medium text-slate-600 border border-slate-200 rounded-md hover:bg-slate-50"
+            className="px-2.5 py-1 text-xs font-semibold text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-all"
           >
             Cancel
           </button>
         </div>
       )}
       {confirmReset && (
-        <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg space-y-2">
+        <div className="p-3.5 bg-amber-50/80 border border-amber-200/60 rounded-xl space-y-2.5">
           <p className="text-sm text-amber-800">
             This will remove all participants and their votes. The plan title and dates will be kept. Are you sure?
           </p>
@@ -175,13 +175,13 @@ export default function PlanStatusControls({
             <button
               onClick={handleReset}
               disabled={loading !== null}
-              className="px-2 py-1 text-xs font-medium text-white bg-amber-600 rounded-md hover:bg-amber-700 disabled:opacity-50"
+              className="px-2.5 py-1 text-xs font-semibold text-white bg-amber-600 rounded-lg hover:bg-amber-700 disabled:opacity-50 transition-all"
             >
               {loading === 'reset' ? 'Resetting...' : 'Yes, reset'}
             </button>
             <button
               onClick={() => setConfirmReset(false)}
-              className="px-2 py-1 text-xs font-medium text-slate-600 border border-slate-200 rounded-md hover:bg-slate-50"
+              className="px-2.5 py-1 text-xs font-semibold text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-all"
             >
               Cancel
             </button>

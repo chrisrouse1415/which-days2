@@ -36,22 +36,22 @@ export default function DoneButton({ participantId, isDone, onToggled }: DoneBut
   }
 
   return (
-    <div className="space-y-1">
+    <div className="space-y-1.5">
       {isDone ? (
         <button
           onClick={handleClick}
           disabled={loading}
-          className="w-full min-h-[44px] py-3 text-sm font-medium text-violet-700 bg-violet-50 border border-violet-200 rounded-xl hover:bg-violet-100 disabled:opacity-50 transition-colors"
+          className="w-full min-h-[44px] py-3 text-sm font-semibold text-violet-600 bg-violet-50/80 border border-violet-200/60 rounded-2xl hover:bg-violet-100 hover:border-violet-300/60 disabled:opacity-50 transition-all duration-200"
         >
           {loading ? 'Updating...' : 'Edit my responses'}
         </button>
       ) : (
         <>
-          <p className="text-xs text-slate-500 text-center">Available for all remaining dates?</p>
+          <p className="text-xs text-slate-400 text-center">Available for all remaining dates?</p>
           <button
             onClick={handleClick}
             disabled={loading}
-            className="w-full min-h-[44px] py-3 text-sm font-medium text-white bg-violet-600 rounded-xl shadow-md shadow-violet-600/20 hover:bg-violet-700 disabled:opacity-50 transition-colors"
+            className="w-full min-h-[44px] py-3 text-sm font-semibold text-white bg-gradient-to-r from-violet-600 to-violet-500 rounded-2xl shadow-lg shadow-violet-600/25 hover:shadow-xl hover:shadow-violet-600/30 hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-lg transition-all duration-200"
           >
             {loading ? 'Updating...' : 'Done'}
           </button>

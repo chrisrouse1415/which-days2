@@ -252,13 +252,13 @@ export default function DatePicker({
     <div className="space-y-4">
       {/* Count indicator */}
       <div className="flex items-center justify-between">
-        <p className="text-sm text-slate-600">
-          <span className="font-semibold text-teal-700">{selectedDates.length}</span>
+        <p className="text-sm text-slate-500">
+          <span className="font-bold text-teal-600">{selectedDates.length}</span>
           {' / '}
           {maxDates} dates selected
         </p>
         {atMax && (
-          <span className="text-xs font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
+          <span className="text-xs font-semibold text-amber-600 bg-amber-50 px-2.5 py-0.5 rounded-full ring-1 ring-amber-200/60">
             Maximum reached
           </span>
         )}
@@ -270,7 +270,7 @@ export default function DatePicker({
           type="button"
           onClick={addWeekdays}
           disabled={atMax}
-          className="px-3 py-1.5 text-xs font-medium rounded-full border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 bg-white/80 text-slate-600 hover:bg-slate-50 hover:border-slate-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
         >
           Weekdays
         </button>
@@ -278,7 +278,7 @@ export default function DatePicker({
           type="button"
           onClick={addWeekends}
           disabled={atMax}
-          className="px-3 py-1.5 text-xs font-medium rounded-full border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 bg-white/80 text-slate-600 hover:bg-slate-50 hover:border-slate-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
         >
           Weekends
         </button>
@@ -286,7 +286,7 @@ export default function DatePicker({
           type="button"
           onClick={addAll}
           disabled={atMax}
-          className="px-3 py-1.5 text-xs font-medium rounded-full border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 bg-white/80 text-slate-600 hover:bg-slate-50 hover:border-slate-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
         >
           All
         </button>
@@ -299,10 +299,10 @@ export default function DatePicker({
             setHoverDate(null)
           }}
           className={
-            'px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ' +
+            'px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ' +
             (rangeMode
-              ? 'border-violet-400 bg-violet-100 text-violet-700 shadow-sm'
-              : 'border-violet-200 bg-violet-50 text-violet-600 hover:bg-violet-100')
+              ? 'border-violet-300 bg-violet-100 text-violet-700 shadow-sm'
+              : 'border-violet-200 bg-violet-50/80 text-violet-600 hover:bg-violet-100')
           }
         >
           {rangeMode ? (rangeStart ? 'Click end date' : 'Click start date') : 'Select Range'}
@@ -310,24 +310,24 @@ export default function DatePicker({
       </div>
 
       {/* Calendar */}
-      <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm">
+      <div className="border border-slate-200/60 rounded-2xl overflow-hidden bg-white/80 backdrop-blur-sm shadow-warm">
         {/* Month navigation */}
-        <div className="flex items-center justify-between px-4 py-3 bg-slate-50 border-b border-slate-200">
+        <div className="flex items-center justify-between px-4 py-3 bg-slate-50/80 border-b border-slate-200/60">
           <button
             type="button"
             onClick={prevMonth}
-            className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-600 transition-colors"
+            className="p-1.5 rounded-lg hover:bg-white text-slate-500 hover:text-slate-700 transition-all"
             aria-label="Previous month"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <h3 className="text-sm font-semibold text-slate-800">{monthLabel}</h3>
+          <h3 className="text-sm font-bold text-slate-700">{monthLabel}</h3>
           <button
             type="button"
             onClick={nextMonth}
-            className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-600 transition-colors"
+            className="p-1.5 rounded-lg hover:bg-white text-slate-500 hover:text-slate-700 transition-all"
             aria-label="Next month"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -337,10 +337,10 @@ export default function DatePicker({
         </div>
 
         {/* Day headers */}
-        <div className="grid grid-cols-7 border-b border-slate-100">
+        <div className="grid grid-cols-7 border-b border-slate-100/60">
           {DAY_LABELS.map(function (label) {
             return (
-              <div key={label} className="py-2 text-center text-xs font-medium text-slate-400">
+              <div key={label} className="py-2 text-center text-xs font-semibold text-slate-400">
                 {label}
               </div>
             )
@@ -357,13 +357,13 @@ export default function DatePicker({
             var inRangePreview = rangePreview.has(cell.key)
             var isRangeStart = rangeMode && rangeStart === cell.key
 
-            var base = 'relative flex items-center justify-center aspect-square text-sm font-medium transition-all cursor-pointer select-none min-h-[44px]'
+            var base = 'relative flex items-center justify-center aspect-square text-sm font-medium transition-all duration-150 cursor-pointer select-none min-h-[44px]'
             var colorClasses: string
 
             if (isSelected) {
-              colorClasses = 'bg-teal-500 text-white hover:bg-teal-600'
+              colorClasses = 'bg-teal-500 text-white hover:bg-teal-600 shadow-sm'
             } else if (isRangeStart) {
-              colorClasses = 'bg-violet-500 text-white'
+              colorClasses = 'bg-violet-500 text-white shadow-sm'
             } else if (inRangePreview) {
               colorClasses = 'bg-violet-100 text-violet-700'
             } else if (isOtherMonth) {
@@ -371,7 +371,7 @@ export default function DatePicker({
             } else if (dateIsPast) {
               colorClasses = 'text-slate-400 hover:bg-slate-100'
             } else {
-              colorClasses = 'text-slate-700 hover:bg-slate-100'
+              colorClasses = 'text-slate-700 hover:bg-teal-50'
             }
 
             if (atMax && !isSelected) {
@@ -409,7 +409,7 @@ export default function DatePicker({
                 key={dateStr}
                 type="button"
                 onClick={function () { toggleDate(dateStr) }}
-                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium bg-teal-50 text-teal-700 border border-teal-200 rounded-full hover:bg-teal-100 transition-colors"
+                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold bg-teal-50/80 text-teal-700 border border-teal-200/60 rounded-lg hover:bg-teal-100 transition-all"
               >
                 {formatDisplay(dateStr)}
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -426,7 +426,7 @@ export default function DatePicker({
         <button
           type="button"
           onClick={clearAll}
-          className="text-sm text-rose-600 hover:text-rose-800 transition-colors"
+          className="text-sm font-medium text-rose-500 hover:text-rose-700 transition-colors"
         >
           Clear all dates
         </button>

@@ -223,14 +223,14 @@ export default function AvailabilityGrid({
     const isLocked = planStatus === 'locked'
     return (
       <div className="space-y-3">
-        <h3 className="text-sm font-medium text-slate-500 uppercase tracking-wide">
+        <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
           Your Availability
         </h3>
         <div
-          className={`border rounded-xl p-4 ${
+          className={`rounded-2xl p-5 ${
             isLocked
-              ? 'bg-teal-50 border-teal-200'
-              : 'bg-slate-50 border-slate-200'
+              ? 'bg-teal-50/80 border border-teal-200/60'
+              : 'bg-slate-50/80 border border-slate-200/60'
           }`}
           role="alert"
         >
@@ -246,11 +246,11 @@ export default function AvailabilityGrid({
 
   return (
     <div className="space-y-3">
-      <h3 className="text-sm font-medium text-slate-500 uppercase tracking-wide">
+      <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
         Your Availability
       </h3>
 
-      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
         {availabilitySummary.map((date) => {
           const dateStatus = getDateStatus(date)
           const myStatus = getMyStatus(date.planDateId)
@@ -263,23 +263,23 @@ export default function AvailabilityGrid({
           return (
             <div
               key={date.planDateId}
-              className={`flex flex-col rounded-lg border p-2 transition-colors ${
+              className={`flex flex-col rounded-2xl border p-2.5 transition-all duration-200 ${
                 isEliminated
-                  ? 'bg-slate-50 border-slate-200'
-                  : 'bg-white border-slate-200 shadow-sm'
+                  ? 'bg-slate-50/60 border-slate-200/40'
+                  : 'bg-white/80 backdrop-blur-sm border-white/80 shadow-warm hover:shadow-warm-lg'
               }`}
             >
-              <div className="text-center mb-1">
+              <div className="text-center mb-1.5">
                 <p
                   className={`text-sm font-bold leading-tight ${
-                    isEliminated ? 'text-slate-300 line-through' : 'text-slate-900'
+                    isEliminated ? 'text-slate-300 line-through' : 'text-slate-800'
                   }`}
                 >
                   {weekday}
                 </p>
                 <p
                   className={`text-xs ${
-                    isEliminated ? 'text-slate-300 line-through' : 'text-slate-500'
+                    isEliminated ? 'text-slate-300 line-through' : 'text-slate-400'
                   }`}
                 >
                   {monthDay}
@@ -287,7 +287,7 @@ export default function AvailabilityGrid({
               </div>
 
               {date.unavailableBy.length > 0 && (
-                <p className="text-[10px] text-slate-400 text-center mb-1 truncate">
+                <p className="text-[10px] text-slate-400 text-center mb-1.5 truncate">
                   {date.unavailableBy.map((u) => u.displayName).join(', ')} can&apos;t
                 </p>
               )}
@@ -309,7 +309,7 @@ export default function AvailabilityGrid({
                   <button
                     onClick={() => handleToggle(date.planDateId)}
                     disabled={togglingIds.has(date.planDateId)}
-                    className="w-full px-2 py-1.5 min-h-[36px] text-xs font-medium text-rose-600 bg-white border border-rose-200 rounded-md hover:bg-rose-50 disabled:opacity-50 transition-colors"
+                    className="w-full px-2 py-1.5 min-h-[36px] text-xs font-semibold text-rose-500 bg-rose-50/80 border border-rose-200/60 rounded-xl hover:bg-rose-100 hover:border-rose-300/60 disabled:opacity-50 transition-all duration-200"
                   >
                     Can&apos;t do this
                   </button>

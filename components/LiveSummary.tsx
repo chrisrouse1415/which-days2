@@ -39,32 +39,43 @@ export default function LiveSummary({
     (d) => d.status === 'viable' || d.status === 'reopened'
   )
   const eliminatedDates = availabilitySummary.filter((d) => d.status === 'eliminated')
+  const donePercent = participantCount > 0 ? Math.round((doneCount / participantCount) * 100) : 0
 
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-medium text-slate-500 uppercase tracking-wide"><span role="img" aria-label="Summary">📊</span> Summary</h3>
+      <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Summary</h3>
 
-      <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3 shadow-sm">
-        <div className="text-sm text-slate-600 space-y-1">
-          <p>
-            <span className="font-medium text-slate-900">{doneCount}</span> of{' '}
-            <span className="font-medium text-slate-900">{participantCount}</span> participant
-            {participantCount !== 1 ? 's' : ''} done
-          </p>
+      <div className="bg-white/80 backdrop-blur-sm border border-white/80 rounded-2xl p-5 space-y-4 shadow-warm">
+        {/* Progress */}
+        <div>
+          <div className="flex items-baseline justify-between mb-2">
+            <p className="text-sm text-slate-600">
+              <span className="font-bold text-slate-900">{doneCount}</span> of{' '}
+              <span className="font-bold text-slate-900">{participantCount}</span> participant
+              {participantCount !== 1 ? 's' : ''} done
+            </p>
+            <span className="text-xs font-semibold text-slate-400">{donePercent}%</span>
+          </div>
+          <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-teal-500 to-emerald-400 rounded-full transition-all duration-500"
+              style={{ width: `${donePercent}%` }}
+            />
+          </div>
           {doneNames.length > 0 && (
-            <p className="text-xs text-emerald-700">
+            <p className="text-xs text-emerald-600 mt-2">
               Done: {doneNames.join(', ')}
             </p>
           )}
           {notDoneNames.length > 0 && (
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-400 mt-1">
               Waiting for: {notDoneNames.join(', ')}
             </p>
           )}
         </div>
 
         {viableDates.length === 0 && eliminatedDates.length > 0 && (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3" role="alert">
+          <div className="bg-amber-50/80 border border-amber-200/60 rounded-xl p-3" role="alert">
             <p className="text-sm font-medium text-amber-800">
               All dates have been eliminated. The plan owner can reopen dates if needed.
             </p>
@@ -73,14 +84,14 @@ export default function LiveSummary({
 
         {viableDates.length > 0 && (
           <div>
-            <p className="text-xs font-medium text-emerald-700 mb-1">
+            <p className="text-xs font-semibold text-emerald-600 mb-2">
               Viable dates ({viableDates.length})
             </p>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5">
               {viableDates.map((d) => (
                 <span
                   key={d.planDateId}
-                  className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-emerald-100 text-emerald-800"
+                  className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/60"
                 >
                   {formatDate(d.date)}
                 </span>
@@ -91,14 +102,14 @@ export default function LiveSummary({
 
         {eliminatedDates.length > 0 && (
           <div>
-            <p className="text-xs font-medium text-rose-700 mb-1">
+            <p className="text-xs font-semibold text-rose-500 mb-2">
               Eliminated ({eliminatedDates.length})
             </p>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5">
               {eliminatedDates.map((d) => (
                 <span
                   key={d.planDateId}
-                  className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-rose-100 text-rose-800 line-through"
+                  className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-rose-50 text-rose-400 ring-1 ring-rose-200/40 line-through"
                 >
                   {formatDate(d.date)}
                 </span>

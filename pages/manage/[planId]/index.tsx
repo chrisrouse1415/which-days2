@@ -106,17 +106,17 @@ export default function ManagePlan() {
 
   if (!isLoaded || loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50/30 flex items-center justify-center">
+      <div className="min-h-screen bg-warm-gradient flex items-center justify-center">
         <p className="text-slate-400">Loading...</p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50/30 bg-question-pattern">
-      <header className="bg-white/80 backdrop-blur-sm border-b border-slate-200">
+    <div className="min-h-screen bg-warm-gradient bg-question-pattern bg-grain">
+      <header className="glass-header border-b border-teal-100/50 sticky top-0 z-30">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between gap-4 min-w-0">
-          <Link href="/dashboard" className="text-lg font-semibold text-slate-900 hover:text-teal-600 transition-colors">
+          <Link href="/dashboard" className="text-xl font-display font-semibold text-teal-900 hover:text-teal-700 transition-colors tracking-tight">
             Which Days?
           </Link>
           <LoginButton />
@@ -127,20 +127,20 @@ export default function ManagePlan() {
         {error ? (
           <div className="text-center py-16">
             <p className="text-rose-600 mb-4">{error}</p>
-            <Link href="/dashboard" className="text-sm text-teal-600 hover:text-teal-800">
+            <Link href="/dashboard" className="text-sm font-medium text-teal-600 hover:text-teal-800 transition-colors">
               Back to dashboard
             </Link>
           </div>
         ) : data ? (
-          <div className="space-y-6">
+          <div className="space-y-8">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <div className="flex items-center gap-3">
-                  <h1 className="text-2xl font-bold text-slate-900">{data.plan.title}</h1>
+                  <h1 className="font-display text-2xl font-bold text-slate-900 tracking-tight">{data.plan.title}</h1>
                   {data.plan.status === 'active' && (
                     <Link
                       href={`/manage/${planId}/edit`}
-                      className="text-sm text-teal-600 hover:text-teal-800 font-medium transition-colors"
+                      className="text-sm text-teal-600 hover:text-teal-800 font-semibold transition-colors"
                     >
                       Edit Plan
                     </Link>
@@ -149,19 +149,19 @@ export default function ManagePlan() {
                 <p className="text-sm text-slate-500 mt-1">
                   {data.participants.length} participant{data.participants.length !== 1 ? 's' : ''}
                   {data.participants.length > 0 && (
-                    <span>
+                    <span className="text-slate-400">
                       {' '}&middot; {data.participants.filter((p) => p.is_done).length} done
                     </span>
                   )}
                 </p>
               </div>
               <span
-                className={`shrink-0 inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${
+                className={`shrink-0 inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold ${
                   data.plan.status === 'active'
-                    ? 'bg-emerald-100 text-emerald-800'
+                    ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
                     : data.plan.status === 'locked'
-                    ? 'bg-slate-100 text-slate-600'
-                    : 'bg-rose-100 text-rose-600'
+                    ? 'bg-slate-50 text-slate-500 ring-1 ring-slate-200'
+                    : 'bg-rose-50 text-rose-500 ring-1 ring-rose-200'
                 }`}
               >
                 {data.plan.status}
@@ -169,14 +169,14 @@ export default function ManagePlan() {
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-sm font-medium text-slate-500 uppercase tracking-wide">
+              <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
                 Share Link
               </h3>
               <ShareLink shareId={data.plan.share_id} />
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-sm font-medium text-slate-500 uppercase tracking-wide">
+              <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
                 Plan Controls
               </h3>
               <PlanStatusControls
@@ -188,7 +188,7 @@ export default function ManagePlan() {
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-sm font-medium text-slate-500 uppercase tracking-wide">
+              <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
                 Results
               </h3>
               <ResultsMatrix
@@ -201,8 +201,8 @@ export default function ManagePlan() {
               />
             </div>
 
-            <div className="pt-4 border-t border-slate-200">
-              <Link href="/dashboard" className="text-sm text-teal-600 hover:text-teal-800">
+            <div className="pt-4 border-t border-slate-200/60">
+              <Link href="/dashboard" className="text-sm font-medium text-teal-600 hover:text-teal-800 transition-colors">
                 &larr; Back to dashboard
               </Link>
             </div>

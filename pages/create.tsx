@@ -38,37 +38,37 @@ export default function CreatePage() {
 
   if (!isLoaded) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-slate-500">Loading...</p>
+      <div className="min-h-screen bg-warm-gradient flex items-center justify-center">
+        <p className="text-slate-400">Loading...</p>
       </div>
     )
   }
 
   if (!isSignedIn) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
-        <p className="text-slate-600">Sign in to create a plan</p>
+      <div className="min-h-screen bg-warm-gradient flex flex-col items-center justify-center gap-4">
+        <p className="text-slate-500">Sign in to create a plan</p>
         <LoginButton />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50/30 bg-question-pattern">
-      <header className="bg-white/80 backdrop-blur-sm border-b border-slate-200">
+    <div className="min-h-screen bg-warm-gradient bg-question-pattern bg-grain">
+      <header className="glass-header border-b border-teal-100/50 sticky top-0 z-30">
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between gap-4 min-w-0">
-          <h1 className="text-lg font-semibold text-slate-900">Create a Plan</h1>
+          <h1 className="text-xl font-display font-semibold text-teal-900 tracking-tight">Create a Plan</h1>
           <LoginButton />
         </div>
       </header>
 
       <main id="main-content" className="max-w-3xl mx-auto px-4 py-8">
         {loading && (
-          <p className="text-center text-slate-500">Loading...</p>
+          <p className="text-center text-slate-400">Loading...</p>
         )}
 
         {error && (
-          <div className="max-w-lg mx-auto p-3 text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-lg">
+          <div className="max-w-lg mx-auto p-3 text-sm text-rose-700 bg-rose-50/80 border border-rose-200/60 rounded-xl">
             {error}
           </div>
         )}

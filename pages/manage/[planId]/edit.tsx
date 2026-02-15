@@ -61,17 +61,17 @@ export default function EditPlanPage() {
 
   if (!isLoaded || loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50/30 flex items-center justify-center">
+      <div className="min-h-screen bg-warm-gradient flex items-center justify-center">
         <p className="text-slate-400">Loading...</p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50/30 bg-question-pattern">
-      <header className="bg-white/80 backdrop-blur-sm border-b border-slate-200">
+    <div className="min-h-screen bg-warm-gradient bg-question-pattern bg-grain">
+      <header className="glass-header border-b border-teal-100/50 sticky top-0 z-30">
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between gap-4 min-w-0">
-          <h1 className="text-lg font-semibold text-slate-900">Edit Plan</h1>
+          <h1 className="text-xl font-display font-semibold text-teal-900 tracking-tight">Edit Plan</h1>
           <LoginButton />
         </div>
       </header>
@@ -80,7 +80,7 @@ export default function EditPlanPage() {
         {error ? (
           <div className="text-center py-16">
             <p className="text-rose-600 mb-4">{error}</p>
-            <Link href={planId ? `/manage/${planId}` : '/dashboard'} className="text-sm text-teal-600 hover:text-teal-800">
+            <Link href={planId ? `/manage/${planId}` : '/dashboard'} className="text-sm font-medium text-teal-600 hover:text-teal-800 transition-colors">
               Back to plan
             </Link>
           </div>

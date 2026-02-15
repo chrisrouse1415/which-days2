@@ -98,10 +98,20 @@ export default function PlanForm({
     <form onSubmit={handleSubmit} className="max-w-lg mx-auto space-y-6">
       {/* Quota indicator (create mode only) */}
       {!isEdit && quota && (
-        <div className="text-sm text-slate-500">
-          Active plans: {quota.activePlanCount} / {quota.maxPlans}
+        <div className="flex items-center gap-2 text-sm text-slate-500">
+          <div className="flex items-center gap-1">
+            {Array.from({ length: quota.maxPlans }).map((_, i) => (
+              <div
+                key={i}
+                className={`w-2 h-2 rounded-full ${
+                  i < quota.activePlanCount ? 'bg-teal-500' : 'bg-slate-200'
+                }`}
+              />
+            ))}
+          </div>
+          <span>{quota.activePlanCount} / {quota.maxPlans} active</span>
           {!quota.canCreate && (
-            <span className="ml-2 text-rose-600 font-medium">
+            <span className="text-rose-600 font-semibold">
               Limit reached
             </span>
           )}
@@ -110,14 +120,14 @@ export default function PlanForm({
 
       {/* Error message */}
       {error && (
-        <div className="p-3 text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-lg">
+        <div className="p-3 text-sm text-rose-700 bg-rose-50/80 border border-rose-200/60 rounded-xl">
           {error}
         </div>
       )}
 
       {/* Title */}
       <div>
-        <label htmlFor="title" className="block text-sm font-medium text-slate-700">
+        <label htmlFor="title" className="block text-sm font-medium text-slate-600 mb-1.5">
           Plan title
         </label>
         <input
@@ -127,13 +137,13 @@ export default function PlanForm({
           onChange={(e) => setTitle(e.target.value)}
           maxLength={100}
           placeholder="e.g. Team dinner this month"
-          className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+          className="block w-full rounded-xl border border-slate-200 bg-white/80 px-4 py-2.5 text-sm shadow-sm placeholder:text-slate-300 focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-400/20 transition-all"
         />
       </div>
 
       {/* Dates */}
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-2">
+        <label className="block text-sm font-medium text-slate-600 mb-2">
           Dates
         </label>
         <DatePicker selectedDates={dates} onChange={setDates} maxDates={30} />
@@ -143,7 +153,7 @@ export default function PlanForm({
       <button
         type="submit"
         disabled={isSubmitting || (!isEdit && quota && !quota.canCreate)}
-        className="w-full rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white shadow-md shadow-teal-600/20 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        className="w-full rounded-xl bg-gradient-to-r from-teal-600 to-teal-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-teal-600/25 hover:shadow-xl hover:shadow-teal-600/30 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-lg transition-all duration-200"
       >
         {isSubmitting
           ? (isEdit ? 'Saving...' : 'Creating...')

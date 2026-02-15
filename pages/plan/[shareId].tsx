@@ -195,15 +195,15 @@ export default function PlanShare({ og }: PlanShareProps) {
         <meta name="twitter:description" content={og.description} />
         <meta name="twitter:image" content={og.image} />
       </Head>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50/30 bg-question-pattern">
-      <header className="bg-white/80 backdrop-blur-sm border-b border-slate-200">
+      <div className="min-h-screen bg-warm-gradient bg-question-pattern bg-grain">
+      <header className="glass-header border-b border-teal-100/50 sticky top-0 z-30">
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between gap-4 min-w-0">
-          <Link href="/" className="text-lg font-semibold text-slate-900 hover:text-teal-600 transition-colors">
+          <Link href="/" className="text-xl font-display font-semibold text-teal-900 hover:text-teal-700 transition-colors tracking-tight">
             Which Days?
           </Link>
           {myName && (
-            <span className="text-sm text-slate-500">
-              Joined as <span className="font-medium text-slate-700">{myName}</span>
+            <span className="text-sm text-slate-400">
+              Joined as <span className="font-semibold text-slate-600">{myName}</span>
             </span>
           )}
         </div>
@@ -230,7 +230,7 @@ export default function PlanShare({ og }: PlanShareProps) {
         ) : phase === 'availability' && planData && participantId ? (
           <div className="space-y-6">
             <div>
-              <h1 className="text-2xl font-bold text-slate-900">{planData.plan.title}</h1>
+              <h1 className="font-display text-2xl font-bold text-slate-900 tracking-tight">{planData.plan.title}</h1>
             </div>
 
             {needsReview && (

@@ -49,13 +49,13 @@ export default function ForceReopenButton({
           <button
             onClick={handleReopen}
             disabled={loading}
-            className="px-2 py-1 text-xs font-medium text-white bg-amber-600 rounded-md hover:bg-amber-700 disabled:opacity-50"
+            className="px-2.5 py-1 text-xs font-semibold text-white bg-amber-600 rounded-lg hover:bg-amber-700 disabled:opacity-50 transition-all"
           >
             {loading ? 'Reopening...' : 'Confirm'}
           </button>
           <button
             onClick={() => setConfirming(false)}
-            className="px-2 py-1 text-xs font-medium text-slate-600 border border-slate-200 rounded-md hover:bg-slate-50"
+            className="px-2.5 py-1 text-xs font-semibold text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-all"
           >
             Cancel
           </button>
@@ -70,7 +70,7 @@ export default function ForceReopenButton({
   return (
     <button
       onClick={() => setConfirming(true)}
-      className="px-2 py-1 text-xs font-medium text-amber-700 border border-amber-200 rounded-md hover:bg-amber-50 transition-colors"
+      className="px-2.5 py-1 text-xs font-semibold text-amber-700 border border-amber-200/60 rounded-lg hover:bg-amber-50 transition-all"
       title={`Reopen ${dateLabel} — resets all responses for this date`}
       aria-label={`Reopen ${dateLabel}`}
     >
