@@ -24,11 +24,6 @@ export default function Home() {
             for everyone
           </span>
         </h2>
-        <p className="text-lg text-slate-500 mb-10 max-w-md mx-auto leading-relaxed">
-          Create a plan, share the link, and let people mark the dates they
-          can&apos;t do. The surviving dates work for everyone.
-        </p>
-
         {isLoaded && isSignedIn ? (
           <div className="space-y-4">
             <Link

@@ -34,42 +34,24 @@ export default function LiveSummary({
 }: LiveSummaryProps) {
   const participantCount = participants.length
   const doneNames = participants.filter((p) => p.is_done).map((p) => p.display_name)
-  const notDoneNames = participants.filter((p) => !p.is_done).map((p) => p.display_name)
   const viableDates = availabilitySummary.filter(
     (d) => d.status === 'viable' || d.status === 'reopened'
   )
   const eliminatedDates = availabilitySummary.filter((d) => d.status === 'eliminated')
-  const donePercent = participantCount > 0 ? Math.round((doneCount / participantCount) * 100) : 0
-
   return (
     <div className="space-y-4">
       <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Summary</h3>
 
       <div className="bg-white/80 backdrop-blur-sm border border-white/80 rounded-2xl p-5 space-y-4 shadow-warm">
-        {/* Progress */}
-        <div>
-          <div className="flex items-baseline justify-between mb-2">
-            <p className="text-sm text-slate-600">
-              <span className="font-bold text-slate-900">{doneCount}</span> of{' '}
-              <span className="font-bold text-slate-900">{participantCount}</span> participant
-              {participantCount !== 1 ? 's' : ''} done
-            </p>
-            <span className="text-xs font-semibold text-slate-400">{donePercent}%</span>
-          </div>
-          <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-teal-500 to-emerald-400 rounded-full transition-all duration-500"
-              style={{ width: `${donePercent}%` }}
-            />
-          </div>
+        <div className="text-sm text-slate-600">
+          <p>
+            <span className="font-bold text-slate-900">{doneCount}</span> of{' '}
+            <span className="font-bold text-slate-900">{participantCount}</span> participant
+            {participantCount !== 1 ? 's' : ''} done
+          </p>
           {doneNames.length > 0 && (
-            <p className="text-xs text-emerald-600 mt-2">
+            <p className="text-xs text-emerald-600 mt-1">
               Done: {doneNames.join(', ')}
-            </p>
-          )}
-          {notDoneNames.length > 0 && (
-            <p className="text-xs text-slate-400 mt-1">
-              Waiting for: {notDoneNames.join(', ')}
             </p>
           )}
         </div>
