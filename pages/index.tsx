@@ -49,39 +49,81 @@ export default function Home() {
           </div>
         )}
 
-        {/* How it works */}
-        <div className="mt-24 text-left sm:grid sm:grid-cols-3 sm:gap-6 space-y-3 sm:space-y-0">
-          <div className="bg-white/70 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-6 shadow-warm border border-white/80 transition-lift flex items-center gap-3 sm:block">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 shrink-0 rounded-lg sm:rounded-xl bg-teal-100 flex items-center justify-center text-sm sm:text-lg sm:mb-4">
-              1
-            </div>
-            <div>
-              <h3 className="font-display font-semibold text-slate-900 text-sm sm:text-base sm:mb-1">Pick</h3>
-              <p className="text-xs sm:text-sm text-slate-500 leading-snug sm:leading-relaxed">
-                Pick some possible dates.
-              </p>
+        {/* How it works — connected timeline */}
+        <div className="mt-20 bg-white/60 backdrop-blur-sm rounded-2xl shadow-warm border border-white/80 p-5 sm:p-8">
+          {/* Desktop: horizontal flow */}
+          <div className="hidden sm:block">
+            <div className="relative flex items-start justify-between">
+              {/* Connecting line behind the nodes */}
+              <div
+                className="absolute top-[15px] left-[16.67%] right-[16.67%] h-[2px]"
+                style={{ background: 'linear-gradient(to right, #0d9488, #d97706, #059669)' }}
+              />
+              {/* Step 1 */}
+              <div className="relative flex flex-col items-center text-center w-1/3 px-2">
+                <div className="w-[30px] h-[30px] rounded-full bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center text-white text-xs font-bold shadow-md shadow-teal-600/30 z-10">
+                  1
+                </div>
+                <h3 className="font-display font-semibold text-slate-900 mt-3 text-[15px]">Pick</h3>
+                <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                  Choose some possible dates.
+                </p>
+              </div>
+              {/* Step 2 */}
+              <div className="relative flex flex-col items-center text-center w-1/3 px-2">
+                <div className="w-[30px] h-[30px] rounded-full bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-white text-xs font-bold shadow-md shadow-amber-600/30 z-10">
+                  2
+                </div>
+                <h3 className="font-display font-semibold text-slate-900 mt-3 text-[15px]">Share</h3>
+                <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                  Send everyone the link.
+                </p>
+              </div>
+              {/* Step 3 */}
+              <div className="relative flex flex-col items-center text-center w-1/3 px-2">
+                <div className="w-[30px] h-[30px] rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white text-xs font-bold shadow-md shadow-emerald-600/30 z-10">
+                  3
+                </div>
+                <h3 className="font-display font-semibold text-slate-900 mt-3 text-[15px]">Decide</h3>
+                <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                  People cut dates they can&apos;t do, see what&apos;s left.
+                </p>
+              </div>
             </div>
           </div>
-          <div className="bg-white/70 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-6 shadow-warm border border-white/80 transition-lift flex items-center gap-3 sm:block">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 shrink-0 rounded-lg sm:rounded-xl bg-violet-100 flex items-center justify-center text-sm sm:text-lg sm:mb-4">
-              2
-            </div>
-            <div>
-              <h3 className="font-display font-semibold text-slate-900 text-sm sm:text-base sm:mb-1">Share</h3>
-              <p className="text-xs sm:text-sm text-slate-500 leading-snug sm:leading-relaxed">
-                Share a link. Anyone can join, no sign-up needed.
-              </p>
-            </div>
-          </div>
-          <div className="bg-white/70 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-6 shadow-warm border border-white/80 transition-lift flex items-center gap-3 sm:block">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 shrink-0 rounded-lg sm:rounded-xl bg-emerald-100 flex items-center justify-center text-sm sm:text-lg sm:mb-4">
-              3
-            </div>
-            <div>
-              <h3 className="font-display font-semibold text-slate-900 text-sm sm:text-base sm:mb-1">Decide</h3>
-              <p className="text-xs sm:text-sm text-slate-500 leading-snug sm:leading-relaxed">
-                People cross off what they can&apos;t do. See which dates survive.
-              </p>
+
+          {/* Mobile: vertical timeline */}
+          <div className="sm:hidden">
+            <div className="relative flex flex-col gap-4 pl-8">
+              {/* Vertical connecting line */}
+              <div
+                className="absolute left-[11px] top-[12px] w-[2px]"
+                style={{ background: 'linear-gradient(to bottom, #0d9488, #d97706, #059669)', height: 'calc(100% - 48px)' }}
+              />
+              {/* Step 1 */}
+              <div className="relative">
+                <div className="absolute -left-8 top-0 w-6 h-6 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center text-white text-[10px] font-bold shadow-md shadow-teal-600/30 z-10">
+                  1
+                </div>
+                <p className="font-display font-semibold text-slate-900 text-sm leading-6">Pick</p>
+                <p className="text-xs text-slate-500">Choose some possible dates.</p>
+              </div>
+              {/* Step 2 */}
+              <div className="relative">
+                <div className="absolute -left-8 top-0 w-6 h-6 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-white text-[10px] font-bold shadow-md shadow-amber-600/30 z-10">
+                  2
+                </div>
+                <p className="font-display font-semibold text-slate-900 text-sm leading-6">Share</p>
+                <p className="text-xs text-slate-500">Send everyone the link.</p>
+              </div>
+              {/* Step 3 */}
+              <div className="relative">
+                <div className="absolute -left-8 top-0 w-6 h-6 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white text-[10px] font-bold shadow-md shadow-emerald-600/30 z-10">
+                  3
+                </div>
+                <p className="font-display font-semibold text-slate-900 text-sm leading-6">Decide</p>
+                <p className="text-xs text-slate-500">People cut dates they can&apos;t do, see what&apos;s left.</p>
+              </div>
             </div>
           </div>
         </div>
