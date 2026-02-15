@@ -47,6 +47,15 @@ export default function ShareLink({ shareId }: ShareLinkProps) {
             ? 'Failed to copy'
             : 'Copy'}
       </button>
+      <a
+        href={shareUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Open share link"
+        className="shrink-0 px-4 py-2.5 text-sm font-semibold rounded-xl text-teal-700 bg-teal-50 border border-teal-200 hover:bg-teal-100 transition-all duration-200"
+      >
+        Open
+      </a>
     </div>
   )
 }

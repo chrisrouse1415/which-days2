@@ -135,17 +135,7 @@ export default function ManagePlan() {
           <div className="space-y-8">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <div className="flex items-center gap-3">
-                  <h1 className="font-display text-2xl font-bold text-slate-900 tracking-tight">{data.plan.title}</h1>
-                  {data.plan.status === 'active' && (
-                    <Link
-                      href={`/manage/${planId}/edit`}
-                      className="text-sm text-teal-600 hover:text-teal-800 font-semibold transition-colors"
-                    >
-                      Edit Plan
-                    </Link>
-                  )}
-                </div>
+                <h1 className="font-display text-2xl font-bold text-slate-900 tracking-tight">{data.plan.title}</h1>
                 <p className="text-sm text-slate-500 mt-1">
                   {data.participants.length} participant{data.participants.length !== 1 ? 's' : ''}
                   {data.participants.length > 0 && (
@@ -184,6 +174,7 @@ export default function ManagePlan() {
                 currentStatus={data.plan.status}
                 onStatusChanged={handleStatusChanged}
                 onDataRefresh={handleDataRefresh}
+                editHref={`/manage/${planId}/edit`}
               />
             </div>
 

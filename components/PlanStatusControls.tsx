@@ -1,10 +1,12 @@
 import { useState } from 'react'
+import Link from 'next/link'
 
 interface PlanStatusControlsProps {
   planId: string
   currentStatus: string
   onStatusChanged: (status: string) => void
   onDataRefresh?: () => void
+  editHref?: string
 }
 
 export default function PlanStatusControls({
@@ -12,6 +14,7 @@ export default function PlanStatusControls({
   currentStatus,
   onStatusChanged,
   onDataRefresh,
+  editHref,
 }: PlanStatusControlsProps) {
   const [loading, setLoading] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -120,6 +123,14 @@ export default function PlanStatusControls({
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2.5">
+        {editHref && (
+          <Link
+            href={editHref}
+            className="px-3.5 py-1.5 text-sm font-semibold text-teal-600 border border-teal-200/60 rounded-xl hover:bg-teal-50 hover:border-teal-300 transition-all"
+          >
+            Edit Plan
+          </Link>
+        )}
         <button
           onClick={() => handleStatusChange('locked')}
           disabled={loading !== null}

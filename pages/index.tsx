@@ -50,33 +50,39 @@ export default function Home() {
         )}
 
         {/* How it works */}
-        <div className="mt-24 grid grid-cols-1 sm:grid-cols-3 gap-6 text-left">
-          <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-warm border border-white/80 transition-lift">
-            <div className="w-10 h-10 rounded-xl bg-teal-100 flex items-center justify-center text-lg mb-4">
+        <div className="mt-24 text-left sm:grid sm:grid-cols-3 sm:gap-6 space-y-3 sm:space-y-0">
+          <div className="bg-white/70 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-6 shadow-warm border border-white/80 transition-lift flex items-center gap-3 sm:block">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 shrink-0 rounded-lg sm:rounded-xl bg-teal-100 flex items-center justify-center text-sm sm:text-lg sm:mb-4">
               1
             </div>
-            <h3 className="font-display font-semibold text-slate-900 mb-1">Pick</h3>
-            <p className="text-sm text-slate-500 leading-relaxed">
-              Pick some possible dates.
-            </p>
+            <div>
+              <h3 className="font-display font-semibold text-slate-900 text-sm sm:text-base sm:mb-1">Pick</h3>
+              <p className="text-xs sm:text-sm text-slate-500 leading-snug sm:leading-relaxed">
+                Pick some possible dates.
+              </p>
+            </div>
           </div>
-          <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-warm border border-white/80 transition-lift">
-            <div className="w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center text-lg mb-4">
+          <div className="bg-white/70 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-6 shadow-warm border border-white/80 transition-lift flex items-center gap-3 sm:block">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 shrink-0 rounded-lg sm:rounded-xl bg-violet-100 flex items-center justify-center text-sm sm:text-lg sm:mb-4">
               2
             </div>
-            <h3 className="font-display font-semibold text-slate-900 mb-1">Share</h3>
-            <p className="text-sm text-slate-500 leading-relaxed">
-              Share a link. Anyone can join, no sign-up needed.
-            </p>
+            <div>
+              <h3 className="font-display font-semibold text-slate-900 text-sm sm:text-base sm:mb-1">Share</h3>
+              <p className="text-xs sm:text-sm text-slate-500 leading-snug sm:leading-relaxed">
+                Share a link. Anyone can join, no sign-up needed.
+              </p>
+            </div>
           </div>
-          <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-warm border border-white/80 transition-lift">
-            <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center text-lg mb-4">
+          <div className="bg-white/70 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-6 shadow-warm border border-white/80 transition-lift flex items-center gap-3 sm:block">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 shrink-0 rounded-lg sm:rounded-xl bg-emerald-100 flex items-center justify-center text-sm sm:text-lg sm:mb-4">
               3
             </div>
-            <h3 className="font-display font-semibold text-slate-900 mb-1">Decide</h3>
-            <p className="text-sm text-slate-500 leading-relaxed">
-              People cross off what they can&apos;t do. See which dates survive.
-            </p>
+            <div>
+              <h3 className="font-display font-semibold text-slate-900 text-sm sm:text-base sm:mb-1">Decide</h3>
+              <p className="text-xs sm:text-sm text-slate-500 leading-snug sm:leading-relaxed">
+                People cross off what they can&apos;t do. See which dates survive.
+              </p>
+            </div>
           </div>
         </div>
       </main>

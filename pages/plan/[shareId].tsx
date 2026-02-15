@@ -74,7 +74,7 @@ export const getServerSideProps: GetServerSideProps<PlanShareProps> = async (ctx
       props: {
         og: {
           title: 'Which Days?',
-          description: 'Pick the dates that work for you.',
+          description: 'When are you free?',
           image: `${host}/og-image.jpg`,
         },
       },
@@ -91,7 +91,7 @@ export const getServerSideProps: GetServerSideProps<PlanShareProps> = async (ctx
   const title = ownerName
     ? `Join ${ownerName}'s plan: ${plan.title}`
     : plan.title
-  const description = 'Pick the dates that work for you on Which Days?'
+  const description = 'When are you free?'
 
   return { props: { og: { title, description, image: `${host}/og-image.jpg` } } }
 }
