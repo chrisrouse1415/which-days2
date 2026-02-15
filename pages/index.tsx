@@ -24,6 +24,7 @@ export default function Home() {
             for everyone
           </span>
         </h2>
+        <div className="mb-10" />
         {isLoaded && isSignedIn ? (
           <div className="space-y-4">
             <Link
