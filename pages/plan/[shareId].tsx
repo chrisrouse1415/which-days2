@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/router'
+import Head from 'next/head'
 import Link from 'next/link'
+import type { GetServerSideProps } from 'next'
+import { supabaseAdmin } from '../../lib/supabase-admin'
 import JoinForm from '../../components/JoinForm'
 import AvailabilityGrid from '../../components/AvailabilityGrid'
 import DoneButton from '../../components/DoneButton'
@@ -45,11 +48,59 @@ interface PlanData {
   needsReview: boolean
 }
 
+interface OgMeta {
+  title: string
+  description: string
+  image: string
+}
+
+interface PlanShareProps {
+  og: OgMeta
+}
+
+export const getServerSideProps: GetServerSideProps<PlanShareProps> = async (ctx) => {
+  const shareId = ctx.params?.shareId as string
+  const proto = ctx.req.headers['x-forwarded-proto'] || 'https'
+  const host = `${proto}://${ctx.req.headers.host}`
+
+  const { data: plan } = await supabaseAdmin
+    .from('plans')
+    .select('title, owner_clerk_id')
+    .eq('share_id', shareId)
+    .single()
+
+  if (!plan) {
+    return {
+      props: {
+        og: {
+          title: 'Which Days?',
+          description: 'Pick the dates that work for you.',
+          image: `${host}/og-image.jpg`,
+        },
+      },
+    }
+  }
+
+  const { data: owner } = await supabaseAdmin
+    .from('users')
+    .select('first_name')
+    .eq('clerk_id', plan.owner_clerk_id)
+    .single()
+
+  const ownerName = owner?.first_name
+  const title = ownerName
+    ? `Join ${ownerName}'s plan: ${plan.title}`
+    : plan.title
+  const description = 'Pick the dates that work for you on Which Days?'
+
+  return { props: { og: { title, description, image: `${host}/og-image.jpg` } } }
+}
+
 function getStorageKey(shareId: string) {
   return `whichdays_participant_${shareId}`
 }
 
-export default function PlanShare() {
+export default function PlanShare({ og }: PlanShareProps) {
   const router = useRouter()
   const shareId = router.query.shareId as string | undefined
 
@@ -130,7 +181,21 @@ export default function PlanShare() {
   const myName = planData?.participants.find((p) => p.id === participantId)?.display_name
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50/30 bg-question-pattern">
+    <>
+      <Head>
+        <title>{og.title}</title>
+        <meta property="og:title" content={og.title} />
+        <meta property="og:description" content={og.description} />
+        <meta property="og:image" content={og.image} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={og.title} />
+        <meta name="twitter:description" content={og.description} />
+        <meta name="twitter:image" content={og.image} />
+      </Head>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50/30 bg-question-pattern">
       <header className="bg-white/80 backdrop-blur-sm border-b border-slate-200">
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between gap-4 min-w-0">
           <Link href="/" className="text-lg font-semibold text-slate-900 hover:text-teal-600 transition-colors">
@@ -206,5 +271,6 @@ export default function PlanShare() {
         ) : null}
       </main>
     </div>
+    </>
   )
 }
