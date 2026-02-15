@@ -292,7 +292,6 @@ export default function PlanShare({ og }: PlanShareProps) {
 
             <LiveSummary
               participants={planData.participants}
-              doneCount={planData.doneCount}
               availabilitySummary={planData.availabilitySummary}
             />
           </div>

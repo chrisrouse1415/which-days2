@@ -14,7 +14,6 @@ interface Participant {
 
 interface LiveSummaryProps {
   participants: Participant[]
-  doneCount: number
   availabilitySummary: DateSummary[]
 }
 
@@ -29,10 +28,8 @@ function formatDate(dateStr: string): string {
 
 export default function LiveSummary({
   participants,
-  doneCount,
   availabilitySummary,
 }: LiveSummaryProps) {
-  const participantCount = participants.length
   const doneNames = participants.filter((p) => p.is_done).map((p) => p.display_name)
   const viableDates = availabilitySummary.filter(
     (d) => d.status === 'viable' || d.status === 'reopened'
@@ -43,18 +40,11 @@ export default function LiveSummary({
       <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Summary</h3>
 
       <div className="bg-white/80 backdrop-blur-sm border border-white/80 rounded-2xl p-5 space-y-4 shadow-warm">
-        <div className="text-sm text-slate-600">
-          <p>
-            <span className="font-bold text-slate-900">{doneCount}</span> of{' '}
-            <span className="font-bold text-slate-900">{participantCount}</span> participant
-            {participantCount !== 1 ? 's' : ''} done
+        {doneNames.length > 0 && (
+          <p className="text-xs text-emerald-600">
+            Done: {doneNames.join(', ')}
           </p>
-          {doneNames.length > 0 && (
-            <p className="text-xs text-emerald-600 mt-1">
-              Done: {doneNames.join(', ')}
-            </p>
-          )}
-        </div>
+        )}
 
         {viableDates.length === 0 && eliminatedDates.length > 0 && (
           <div className="bg-amber-50/80 border border-amber-200/60 rounded-xl p-3" role="alert">
