@@ -94,15 +94,15 @@ export default function Home() {
 
           {/* Mobile: vertical timeline */}
           <div className="sm:hidden">
-            <div className="relative flex flex-col gap-4 pl-8">
-              {/* Vertical connecting line */}
+            <div className="relative flex flex-col gap-5 text-center">
+              {/* Vertical connecting line — pinned to left edge of card */}
               <div
-                className="absolute left-[11px] top-[12px] w-[2px]"
+                className="absolute left-0 top-[12px] w-[2px]"
                 style={{ background: 'linear-gradient(to bottom, #0d9488, #d97706, #059669)', height: 'calc(100% - 48px)' }}
               />
               {/* Step 1 */}
               <div className="relative">
-                <div className="absolute -left-8 top-0 w-6 h-6 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center text-white text-[10px] font-bold shadow-md shadow-teal-600/30 z-10">
+                <div className="absolute -left-3 top-0 w-6 h-6 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center text-white text-[10px] font-bold shadow-md shadow-teal-600/30 z-10">
                   1
                 </div>
                 <p className="font-display font-semibold text-slate-900 text-sm leading-6">Pick</p>
@@ -110,7 +110,7 @@ export default function Home() {
               </div>
               {/* Step 2 */}
               <div className="relative">
-                <div className="absolute -left-8 top-0 w-6 h-6 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-white text-[10px] font-bold shadow-md shadow-amber-600/30 z-10">
+                <div className="absolute -left-3 top-0 w-6 h-6 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-white text-[10px] font-bold shadow-md shadow-amber-600/30 z-10">
                   2
                 </div>
                 <p className="font-display font-semibold text-slate-900 text-sm leading-6">Share</p>
@@ -118,7 +118,7 @@ export default function Home() {
               </div>
               {/* Step 3 */}
               <div className="relative">
-                <div className="absolute -left-8 top-0 w-6 h-6 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white text-[10px] font-bold shadow-md shadow-emerald-600/30 z-10">
+                <div className="absolute -left-3 top-0 w-6 h-6 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white text-[10px] font-bold shadow-md shadow-emerald-600/30 z-10">
                   3
                 </div>
                 <p className="font-display font-semibold text-slate-900 text-sm leading-6">Decide</p>
