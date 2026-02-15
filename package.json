@@ -18,7 +18,8 @@
     "next": "^14.2.35",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "svix": "^1.84.1"
+    "svix": "^1.84.1",
+    "swr": "^2.4.0"
   },
   "devDependencies": {
     "@types/node": "^20.19.33",

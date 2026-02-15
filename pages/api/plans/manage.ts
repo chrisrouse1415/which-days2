@@ -1,8 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { requireAuth } from '../../../lib/clerk'
 import {
-  getPlanForOwner,
-  getAvailabilityMatrix,
+  getPlanWithMatrix,
   updatePlanStatus,
   editPlan,
   resetPlan,
@@ -22,19 +21,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     if (req.method === 'GET') {
-      const { plan, dates, participants } = await getPlanForOwner(planId, userId)
-      const { matrix } = await getAvailabilityMatrix(planId)
-
-      return res.status(200).json({ plan, dates, participants, matrix })
+      const result = await getPlanWithMatrix(planId, userId)
+      return res.status(200).json(result)
     }
 
     if (req.method === 'PATCH') {
       const { status, title, dates, reset } = req.body
 
       if (reset === true) {
-        const result = await resetPlan(planId, userId)
-        const { matrix } = await getAvailabilityMatrix(planId)
-        return res.status(200).json({ ...result, matrix })
+        await resetPlan(planId, userId)
+        const result = await getPlanWithMatrix(planId, userId)
+        return res.status(200).json(result)
       }
 
       if (status) {

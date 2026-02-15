@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
 import { useUser } from '@clerk/nextjs'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
+import useSWR from 'swr'
 import LoginButton from '../../../components/LoginButton'
 import ShareLink from '../../../components/ShareLink'
 import PlanStatusControls from '../../../components/PlanStatusControls'
@@ -31,61 +31,57 @@ interface ManageData {
   matrix: Record<string, Record<string, string>>
 }
 
+const fetcher = (url: string) => fetch(url).then((res) => {
+  if (res.status === 401) throw new Error('unauthorized')
+  if (res.status === 403) throw new Error('forbidden')
+  if (res.status === 404) throw new Error('not_found')
+  if (!res.ok) throw new Error('Failed to load plan')
+  return res.json()
+})
+
+function ManageSkeleton() {
+  return (
+    <div className="space-y-8">
+      {/* Title + status */}
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-2">
+          <div className="h-7 w-56 bg-slate-200 rounded-lg animate-pulse" />
+          <div className="h-4 w-32 bg-slate-100 rounded-lg animate-pulse" />
+        </div>
+        <div className="h-6 w-16 bg-slate-100 rounded-lg animate-pulse" />
+      </div>
+
+      {/* Share link */}
+      <div className="space-y-2">
+        <div className="h-4 w-20 bg-slate-100 rounded animate-pulse" />
+        <div className="h-10 w-full bg-white/80 rounded-xl animate-pulse" />
+      </div>
+
+      {/* Controls */}
+      <div className="space-y-2">
+        <div className="h-4 w-24 bg-slate-100 rounded animate-pulse" />
+        <div className="h-10 w-48 bg-white/80 rounded-xl animate-pulse" />
+      </div>
+
+      {/* Results matrix */}
+      <div className="space-y-2">
+        <div className="h-4 w-16 bg-slate-100 rounded animate-pulse" />
+        <div className="h-48 w-full bg-white/80 rounded-2xl animate-pulse" />
+      </div>
+    </div>
+  )
+}
+
 export default function ManagePlan() {
   const { isSignedIn, isLoaded } = useUser()
   const router = useRouter()
   const planId = router.query.planId as string | undefined
 
-  const [data, setData] = useState<ManageData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  async function fetchData() {
-    if (!planId) return
-
-    try {
-      const res = await fetch(`/api/plans/manage?planId=${planId}`)
-
-      if (res.status === 401) {
-        router.replace('/')
-        return
-      }
-      if (res.status === 403) {
-        setError('You do not own this plan.')
-        setLoading(false)
-        return
-      }
-      if (res.status === 404) {
-        setError('Plan not found.')
-        setLoading(false)
-        return
-      }
-      if (!res.ok) {
-        setError('Failed to load plan.')
-        setLoading(false)
-        return
-      }
-
-      const json = await res.json()
-      setData(json)
-    } catch {
-      setError('Network error. Please try again.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    if (!isLoaded) return
-    if (!isSignedIn) {
-      router.replace('/')
-      return
-    }
-    if (!planId) return
-
-    fetchData()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoaded, isSignedIn, planId, router])
+  const apiUrl = planId ? `/api/plans/manage?planId=${planId}` : null
+  const { data, error, isLoading, mutate } = useSWR<ManageData>(
+    isLoaded && isSignedIn && planId ? apiUrl : null,
+    fetcher
+  )
 
   function handleStatusChanged(newStatus: string) {
     if (newStatus === 'deleted') {
@@ -93,23 +89,44 @@ export default function ManagePlan() {
       return
     }
     if (data) {
-      setData({
-        ...data,
-        plan: { ...data.plan, status: newStatus as ManageData['plan']['status'] },
-      })
+      mutate(
+        { ...data, plan: { ...data.plan, status: newStatus as ManageData['plan']['status'] } },
+        false
+      )
     }
   }
 
   function handleDataRefresh() {
-    fetchData()
+    mutate()
   }
 
-  if (!isLoaded || loading) {
+  if (!isLoaded) {
     return (
       <div className="min-h-screen bg-warm-gradient flex items-center justify-center">
         <p className="text-slate-400">Loading...</p>
       </div>
     )
+  }
+
+  if (isLoaded && !isSignedIn) {
+    router.replace('/')
+    return null
+  }
+
+  // Handle specific error types
+  const errorMessage = error
+    ? error.message === 'unauthorized'
+      ? null // will redirect
+      : error.message === 'forbidden'
+      ? 'You do not own this plan.'
+      : error.message === 'not_found'
+      ? 'Plan not found.'
+      : 'Failed to load plan.'
+    : null
+
+  if (error?.message === 'unauthorized') {
+    router.replace('/')
+    return null
   }
 
   return (
@@ -124,13 +141,15 @@ export default function ManagePlan() {
       </header>
 
       <main id="main-content" className="max-w-4xl mx-auto px-4 py-8">
-        {error ? (
+        {errorMessage ? (
           <div className="text-center py-16">
-            <p className="text-rose-600 mb-4">{error}</p>
+            <p className="text-rose-600 mb-4">{errorMessage}</p>
             <Link href="/dashboard" className="text-sm font-medium text-teal-600 hover:text-teal-800 transition-colors">
               Back to dashboard
             </Link>
           </div>
+        ) : isLoading ? (
+          <ManageSkeleton />
         ) : data ? (
           <div className="space-y-8">
             <div className="flex items-start justify-between gap-4">

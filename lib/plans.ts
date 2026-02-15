@@ -516,6 +516,80 @@ export async function resetPlan(planId: string, clerkId: string) {
   return getPlanForOwner(planId, clerkId)
 }
 
+export async function getPlanWithMatrix(planId: string, clerkId: string) {
+  // Query 1: Fetch plan + verify ownership
+  const { data: plan, error: planErr } = await supabaseAdmin
+    .from('plans')
+    .select()
+    .eq('id', planId)
+    .single()
+
+  if (planErr || !plan) {
+    throw new PlanNotFoundError()
+  }
+
+  if (plan.owner_clerk_id !== clerkId) {
+    throw new NotOwnerError()
+  }
+
+  // Queries 2 & 3: Fetch dates + participants in parallel
+  const [datesResult, participantsResult] = await Promise.all([
+    supabaseAdmin
+      .from('plan_dates')
+      .select()
+      .eq('plan_id', planId)
+      .order('date', { ascending: true }),
+    supabaseAdmin
+      .from('participants')
+      .select()
+      .eq('plan_id', planId)
+      .order('created_at', { ascending: true }),
+  ])
+
+  if (datesResult.error) {
+    logger.error('Error fetching plan dates', { planId }, datesResult.error)
+    throw datesResult.error
+  }
+  if (participantsResult.error) {
+    logger.error('Error fetching participants', { planId }, participantsResult.error)
+    throw participantsResult.error
+  }
+
+  const dates = datesResult.data ?? []
+  const participants = participantsResult.data ?? []
+
+  // Query 4: Fetch availability
+  const dateIds = dates.map((d) => d.id)
+  let matrix: Record<string, Record<string, string>> = {}
+
+  if (dateIds.length > 0) {
+    const { data: availability, error: aErr } = await supabaseAdmin
+      .from('availability')
+      .select()
+      .in('plan_date_id', dateIds)
+
+    if (aErr) {
+      logger.error('Error fetching availability for matrix', { planId }, aErr)
+      throw aErr
+    }
+
+    // Build matrix: { [planDateId]: { [participantId]: 'available' | 'unavailable' } }
+    for (const d of dates) {
+      matrix[d.id] = {}
+      for (const p of participants) {
+        matrix[d.id][p.id] = 'available'
+      }
+    }
+    for (const a of availability ?? []) {
+      if (matrix[a.plan_date_id]) {
+        matrix[a.plan_date_id][a.participant_id] = a.status
+      }
+    }
+  }
+
+  return { plan, dates, participants, matrix }
+}
+
 export async function forceReopenDate(planId: string, planDateId: string, clerkId: string) {
   // Verify ownership
   const { data: plan, error: planErr } = await supabaseAdmin

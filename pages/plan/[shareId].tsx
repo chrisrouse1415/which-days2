@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
 import Link from 'next/link'
+import useSWR from 'swr'
 import type { GetServerSideProps } from 'next'
 import { supabaseAdmin } from '../../lib/supabase-admin'
 import JoinForm from '../../components/JoinForm'
@@ -9,8 +10,6 @@ import AvailabilityGrid from '../../components/AvailabilityGrid'
 import DoneButton from '../../components/DoneButton'
 import LiveSummary from '../../components/LiveSummary'
 import NeedsReviewBanner from '../../components/NeedsReviewBanner'
-
-type Phase = 'loading' | 'join' | 'availability'
 
 interface PlanData {
   plan: {
@@ -100,83 +99,110 @@ function getStorageKey(shareId: string) {
   return `whichdays_participant_${shareId}`
 }
 
+const fetcher = (url: string) => fetch(url).then((res) => {
+  if (res.status === 404) throw new Error('not_found')
+  if (!res.ok) throw new Error('Failed to load plan')
+  return res.json()
+})
+
+function PlanSkeleton() {
+  return (
+    <div className="space-y-6">
+      {/* Title */}
+      <div className="h-7 w-48 bg-slate-200 rounded-lg animate-pulse" />
+
+      {/* Date cards */}
+      <div className="space-y-2">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <div
+            key={i}
+            className="bg-white/80 backdrop-blur-sm border border-white/80 rounded-xl p-4 shadow-warm"
+          >
+            <div className="flex items-center justify-between">
+              <div className="h-5 w-32 bg-slate-200 rounded-lg animate-pulse" />
+              <div className="h-8 w-20 bg-slate-100 rounded-lg animate-pulse" />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Done button */}
+      <div className="h-11 w-full bg-slate-100 rounded-xl animate-pulse" />
+
+      {/* Summary */}
+      <div className="bg-white/80 rounded-2xl p-5">
+        <div className="h-5 w-36 bg-slate-200 rounded-lg animate-pulse mb-3" />
+        <div className="space-y-2">
+          <div className="h-4 w-48 bg-slate-100 rounded-lg animate-pulse" />
+          <div className="h-4 w-40 bg-slate-100 rounded-lg animate-pulse" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function PlanShare({ og }: PlanShareProps) {
   const router = useRouter()
   const shareId = router.query.shareId as string | undefined
 
-  const [phase, setPhase] = useState<Phase>('loading')
-  const [planData, setPlanData] = useState<PlanData | null>(null)
-  const [participantId, setParticipantId] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [participantId, setParticipantId] = useState<string | null>(() => {
+    if (typeof window === 'undefined' || !shareId) return null
+    return localStorage.getItem(getStorageKey(shareId))
+  })
   const [isDone, setIsDone] = useState(false)
   const [needsReview, setNeedsReview] = useState(false)
 
-  const fetchPlanData = useCallback(
-    async (pid: string | null) => {
-      if (!shareId) return
+  // Build SWR key — includes participantId when available
+  const swrKey = shareId
+    ? `/api/participants/plan?shareId=${shareId}${participantId ? `&participantId=${participantId}` : ''}`
+    : null
 
-      const params = new URLSearchParams({ shareId })
-      if (pid) params.set('participantId', pid)
-
-      try {
-        const res = await fetch(`/api/participants/plan?${params.toString()}`)
-
-        if (res.status === 404) {
-          setError('Plan not found')
-          setPhase('loading')
-          return
-        }
-
-        if (!res.ok) {
-          setError('Failed to load plan')
-          setPhase('loading')
-          return
-        }
-
-        const data: PlanData = await res.json()
-        setPlanData(data)
-
-        // If we have a stored participantId, verify it exists in the plan
-        if (pid) {
-          const me = data.participants.find((p) => p.id === pid)
-          if (me) {
-            setParticipantId(pid)
-            setIsDone(me.is_done)
-            setNeedsReview(data.needsReview)
-            setPhase('availability')
-          } else {
-            // Stored participant not found — clear and show join
-            localStorage.removeItem(getStorageKey(shareId))
-            setParticipantId(null)
-            setPhase('join')
-          }
+  const { data: planData, error, isLoading, mutate } = useSWR<PlanData>(swrKey, fetcher, {
+    onSuccess: (data) => {
+      if (participantId) {
+        const me = data.participants.find((p) => p.id === participantId)
+        if (me) {
+          setIsDone(me.is_done)
+          setNeedsReview(data.needsReview)
         } else {
-          setPhase('join')
+          // Stored participant not found — clear and show join
+          if (shareId) localStorage.removeItem(getStorageKey(shareId))
+          setParticipantId(null)
         }
-      } catch {
-        setError('Network error. Please try again.')
       }
     },
-    [shareId]
-  )
+  })
 
-  useEffect(() => {
-    if (!shareId) return
-
+  // Initialize participantId from localStorage once shareId becomes available (router hydration)
+  if (shareId && participantId === null && typeof window !== 'undefined') {
     const storedId = localStorage.getItem(getStorageKey(shareId))
-    fetchPlanData(storedId)
-  }, [shareId, fetchPlanData])
+    if (storedId) {
+      // This will trigger a re-render with the correct SWR key
+      setParticipantId(storedId)
+    }
+  }
 
   function handleJoined(newParticipantId: string) {
     if (!shareId) return
     localStorage.setItem(getStorageKey(shareId), newParticipantId)
     setParticipantId(newParticipantId)
-    fetchPlanData(newParticipantId)
+    // SWR key will change automatically, triggering a new fetch
   }
 
   function handleDataRefresh() {
-    fetchPlanData(participantId)
+    mutate()
   }
+
+  // Determine phase
+  const isNotFound = error?.message === 'not_found'
+  const hasError = error && !isNotFound
+  const phase = isLoading
+    ? 'loading'
+    : planData && participantId && planData.participants.find((p) => p.id === participantId)
+    ? 'availability'
+    : planData
+    ? 'join'
+    : 'loading'
 
   const myName = planData?.participants.find((p) => p.id === participantId)?.display_name
 
@@ -210,14 +236,16 @@ export default function PlanShare({ og }: PlanShareProps) {
       </header>
 
       <main id="main-content" className="max-w-3xl mx-auto px-4 py-8">
-        {error ? (
+        {isNotFound ? (
           <div className="text-center py-16">
-            <p className="text-rose-600">{error}</p>
+            <p className="text-rose-600">Plan not found</p>
+          </div>
+        ) : hasError ? (
+          <div className="text-center py-16">
+            <p className="text-rose-600">Failed to load plan. Please try again.</p>
           </div>
         ) : phase === 'loading' ? (
-          <div className="text-center py-16">
-            <p className="text-slate-400">Loading plan...</p>
-          </div>
+          <PlanSkeleton />
         ) : phase === 'join' && planData ? (
           <div className="py-8">
             <JoinForm

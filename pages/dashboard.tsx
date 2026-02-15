@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
 import { useUser } from '@clerk/nextjs'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
+import useSWR from 'swr'
 import LoginButton from '../components/LoginButton'
 
 interface PlanSummary {
@@ -14,38 +14,40 @@ interface PlanSummary {
   doneCount: number
 }
 
+const fetcher = (url: string) => fetch(url).then((res) => {
+  if (!res.ok) throw new Error('Failed to load plans')
+  return res.json()
+})
+
+function DashboardSkeleton() {
+  return (
+    <div className="space-y-3">
+      {[1, 2, 3].map((i) => (
+        <div
+          key={i}
+          className="bg-white/80 backdrop-blur-sm border border-white/80 rounded-2xl p-5 shadow-warm"
+        >
+          <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <div className="h-5 w-40 bg-slate-200 rounded-lg animate-pulse" />
+              <div className="h-4 w-28 bg-slate-100 rounded-lg animate-pulse" />
+            </div>
+            <div className="h-6 w-14 bg-slate-100 rounded-lg animate-pulse" />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export default function Dashboard() {
   const { isSignedIn, isLoaded } = useUser()
   const router = useRouter()
-  const [plans, setPlans] = useState<PlanSummary[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!isLoaded) return
-    if (!isSignedIn) {
-      router.replace('/')
-      return
-    }
-
-    async function fetchPlans() {
-      try {
-        const res = await fetch('/api/plans/list')
-        if (!res.ok) {
-          setError('Failed to load plans')
-          return
-        }
-        const data = await res.json()
-        setPlans(data.plans)
-      } catch {
-        setError('Network error. Please try again.')
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchPlans()
-  }, [isLoaded, isSignedIn, router])
+  const { data, error, isLoading } = useSWR<{ plans: PlanSummary[] }>(
+    isLoaded && isSignedIn ? '/api/plans/list' : null,
+    fetcher
+  )
 
   if (!isLoaded) {
     return (
@@ -55,6 +57,12 @@ export default function Dashboard() {
     )
   }
 
+  if (isLoaded && !isSignedIn) {
+    router.replace('/')
+    return null
+  }
+
+  const plans = data?.plans ?? []
   const activePlans = plans.filter((p) => p.status === 'active')
   const maxPlans = 3
 
@@ -98,9 +106,9 @@ export default function Dashboard() {
         </div>
 
         {error ? (
-          <p className="text-rose-600 text-center py-8">{error}</p>
-        ) : loading ? (
-          <p className="text-slate-400 text-center py-8">Loading plans...</p>
+          <p className="text-rose-600 text-center py-8">Failed to load plans. Please try again.</p>
+        ) : isLoading ? (
+          <DashboardSkeleton />
         ) : plans.length === 0 ? (
           <div className="text-center py-20">
             <span className="inline-block text-4xl mb-4" role="img" aria-label="Calendar">🗓️</span>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useUser } from '@clerk/nextjs'
+import Link from 'next/link'
 import PlanForm from '../components/PlanForm'
 import LoginButton from '../components/LoginButton'
 
@@ -57,12 +58,23 @@ export default function CreatePage() {
     <div className="min-h-screen bg-warm-gradient bg-question-pattern bg-grain">
       <header className="glass-header border-b border-teal-100/50 sticky top-0 z-30">
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between gap-4 min-w-0">
-          <h1 className="text-xl font-display font-semibold text-teal-900 tracking-tight">Create a Plan</h1>
-          <LoginButton />
+          <Link href="/" className="text-xl font-display font-semibold text-teal-900 hover:text-teal-700 transition-colors tracking-tight">
+            Which Days?
+          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/dashboard"
+              className="text-sm font-medium text-teal-600 hover:text-teal-800 transition-colors"
+            >
+              My Plans
+            </Link>
+            <LoginButton />
+          </div>
         </div>
       </header>
 
       <main id="main-content" className="max-w-3xl mx-auto px-4 py-8">
+        <h1 className="font-display text-2xl font-bold text-slate-900 tracking-tight mb-8">Create a Plan</h1>
         {loading && (
           <p className="text-center text-slate-400">Loading...</p>
         )}
