@@ -1,6 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
   <defs>
-    <!-- Warm gradient background -->
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#f0fdfa"/>
       <stop offset="30%" stop-color="#f0fdfa"/>
@@ -8,12 +7,10 @@
       <stop offset="75%" stop-color="#f0fdfa"/>
       <stop offset="100%" stop-color="#f8fffe"/>
     </linearGradient>
-    <!-- Teal gradient for accent bar -->
     <linearGradient id="tealGrad" x1="0" y1="0" x2="1" y2="0">
       <stop offset="0%" stop-color="#0d9488"/>
       <stop offset="100%" stop-color="#14b8a6"/>
     </linearGradient>
-    <!-- Subtle vignette -->
     <radialGradient id="vignette" cx="50%" cy="50%" r="70%">
       <stop offset="0%" stop-color="white" stop-opacity="0"/>
       <stop offset="100%" stop-color="#0f766e" stop-opacity="0.04"/>
@@ -24,7 +21,7 @@
   <rect width="1200" height="630" fill="url(#bg)"/>
   <rect width="1200" height="630" fill="url(#vignette)"/>
 
-  <!-- Scattered question marks (subtle pattern) -->
+  <!-- Scattered question marks -->
   <g opacity="0.06">
     <text x="80" y="100" font-family="Georgia, serif" font-size="48" font-weight="700" fill="#0d9488" transform="rotate(-15 80 100)">?</text>
     <text x="250" y="560" font-family="Georgia, serif" font-size="36" font-weight="700" fill="#0d9488" transform="rotate(20 250 560)">?</text>
@@ -44,36 +41,14 @@
     <text x="100" y="500" font-size="30" transform="rotate(18 100 500)">🗓️</text>
   </g>
 
-  <!-- Main content area - centered -->
   <!-- Calendar emoji -->
-  <text x="600" y="220" text-anchor="middle" font-size="72">🗓️</text>
+  <text x="600" y="210" text-anchor="middle" font-size="120">🗓️</text>
 
   <!-- "Which Days?" in serif -->
-  <text x="600" y="320" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="72" font-weight="700" fill="#0f172a" letter-spacing="-2">Which Days?</text>
+  <text x="600" y="370" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="120" font-weight="700" fill="#0f172a" letter-spacing="-3">Which Days?</text>
 
   <!-- Tagline -->
-  <text x="600" y="380" text-anchor="middle" font-family="-apple-system, 'Segoe UI', sans-serif" font-size="26" fill="#64748b" letter-spacing="0.5">Find a day that works for everyone</text>
-
-  <!-- Three step pills -->
-  <g transform="translate(600, 440)">
-    <!-- Step 1 -->
-    <rect x="-380" y="0" width="220" height="44" rx="22" fill="white" fill-opacity="0.8" stroke="#e2e8f0" stroke-width="1"/>
-    <circle cx="-350" cy="22" r="14" fill="#ccfbf1"/>
-    <text x="-350" y="27" text-anchor="middle" font-family="-apple-system, sans-serif" font-size="13" font-weight="600" fill="#0f766e">1</text>
-    <text x="-325" y="27" font-family="-apple-system, sans-serif" font-size="14" fill="#475569">Pick dates</text>
-
-    <!-- Step 2 -->
-    <rect x="-120" y="0" width="220" height="44" rx="22" fill="white" fill-opacity="0.8" stroke="#e2e8f0" stroke-width="1"/>
-    <circle cx="-90" cy="22" r="14" fill="#ede9fe"/>
-    <text x="-90" y="27" text-anchor="middle" font-family="-apple-system, sans-serif" font-size="13" font-weight="600" fill="#6d28d9">2</text>
-    <text x="-65" y="27" font-family="-apple-system, sans-serif" font-size="14" fill="#475569">Share a link</text>
-
-    <!-- Step 3 -->
-    <rect x="140" y="0" width="220" height="44" rx="22" fill="white" fill-opacity="0.8" stroke="#e2e8f0" stroke-width="1"/>
-    <circle cx="170" cy="22" r="14" fill="#d1fae5"/>
-    <text x="170" y="27" text-anchor="middle" font-family="-apple-system, sans-serif" font-size="13" font-weight="600" fill="#047857">3</text>
-    <text x="195" y="27" font-family="-apple-system, sans-serif" font-size="14" fill="#475569">See what works</text>
-  </g>
+  <text x="600" y="440" text-anchor="middle" font-family="-apple-system, 'Segoe UI', sans-serif" font-size="38" fill="#64748b" letter-spacing="0.5">Find a day that works for everyone</text>
 
   <!-- Bottom accent bar -->
   <rect x="0" y="622" width="1200" height="8" fill="url(#tealGrad)"/>
