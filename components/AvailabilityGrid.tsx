@@ -116,9 +116,14 @@ export default function AvailabilityGrid({
     if (togglingIds.has(planDateId)) return
     setTogglingIds((prev) => new Set(prev).add(planDateId))
 
-    // Optimistic update
+    // Optimistic update — show grey tile + undo timer immediately
+    const optimisticDeadline = Date.now() + 10_000
     setOptimisticDates((prev) => ({ ...prev, [planDateId]: 'eliminated' }))
     setOptimisticMy((prev) => ({ ...prev, [planDateId]: 'unavailable' }))
+    setUndoPending((prev) => [
+      ...prev,
+      { planDateId, eventLogId: '', deadline: optimisticDeadline },
+    ])
 
     try {
       const res = await fetch('/api/availability/toggle', {
@@ -128,7 +133,7 @@ export default function AvailabilityGrid({
       })
 
       if (!res.ok) {
-        // Revert optimistic updates
+        // Revert all optimistic updates
         setOptimisticDates((prev) => {
           const next = { ...prev }
           delete next[planDateId]
@@ -139,21 +144,22 @@ export default function AvailabilityGrid({
           delete next[planDateId]
           return next
         })
+        setUndoPending((prev) => prev.filter((u) => u.planDateId !== planDateId))
         return
       }
 
       const data = await res.json()
 
-      setUndoPending((prev) => [
-        ...prev,
-        {
-          planDateId,
-          eventLogId: data.eventLogId,
-          deadline: new Date(data.undoDeadline).getTime(),
-        },
-      ])
+      // Update with real eventLogId (keep optimistic deadline to avoid timer jump)
+      setUndoPending((prev) =>
+        prev.map((u) =>
+          u.planDateId === planDateId
+            ? { ...u, eventLogId: data.eventLogId }
+            : u
+        )
+      )
     } catch {
-      // Revert optimistic updates
+      // Revert all optimistic updates
       setOptimisticDates((prev) => {
         const next = { ...prev }
         delete next[planDateId]
@@ -164,6 +170,7 @@ export default function AvailabilityGrid({
         delete next[planDateId]
         return next
       })
+      setUndoPending((prev) => prev.filter((u) => u.planDateId !== planDateId))
     } finally {
       setTogglingIds((prev) => {
         const next = new Set(prev)
@@ -298,6 +305,7 @@ export default function AvailabilityGrid({
                 ) : undoEntry ? (
                   <UndoTimer
                     deadline={undoEntry.deadline}
+                    disabled={!undoEntry.eventLogId}
                     onExpired={() => handleUndoExpired(date.planDateId)}
                     onUndo={() => handleUndo(date.planDateId, undoEntry.eventLogId)}
                   />

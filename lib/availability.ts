@@ -102,7 +102,7 @@ export async function toggleUnavailable(participantId: string, planDateId: strin
   }
 
   // Insert event log with undo deadline
-  const undoDeadline = new Date(Date.now() + 30_000).toISOString()
+  const undoDeadline = new Date(Date.now() + 10_000).toISOString()
 
   const { data: eventLog, error: logErr } = await supabaseAdmin
     .from('event_log')
