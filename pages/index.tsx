@@ -53,76 +53,60 @@ export default function Home() {
         <div className="mt-20 bg-white/60 backdrop-blur-sm rounded-2xl shadow-warm border border-white/80 p-5 sm:p-8">
           {/* Desktop: horizontal flow */}
           <div className="hidden sm:block">
-            <div className="relative flex items-start justify-between">
-              {/* Connecting line behind the nodes */}
-              <div
-                className="absolute top-[15px] left-[16.67%] right-[16.67%] h-[2px]"
-                style={{ background: 'linear-gradient(to right, #0d9488, #d97706, #059669)' }}
-              />
+            <div className="flex items-start justify-between">
               {/* Step 1 */}
-              <div className="relative flex flex-col items-center text-center w-1/3 px-2">
-                <div className="w-[30px] h-[30px] rounded-full bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center text-white text-xs font-bold shadow-md shadow-teal-600/30 z-10">
-                  1
-                </div>
-                <h3 className="font-display font-semibold text-slate-900 mt-3 text-[15px]">Pick</h3>
+              <div className="flex flex-col items-center text-center w-1/3 px-2">
+                <span className="text-3xl" role="img" aria-label="Lightbulb">💡</span>
+                <h3 className="font-display font-semibold text-slate-900 mt-3 text-[15px]">Propose</h3>
                 <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
-                  Choose some possible dates.
+                  Choose some possible dates
                 </p>
               </div>
+              {/* Arrow */}
+              <span className="text-slate-300 text-xl mt-1 shrink-0" aria-hidden="true">&rarr;</span>
               {/* Step 2 */}
-              <div className="relative flex flex-col items-center text-center w-1/3 px-2">
-                <div className="w-[30px] h-[30px] rounded-full bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-white text-xs font-bold shadow-md shadow-amber-600/30 z-10">
-                  2
-                </div>
+              <div className="flex flex-col items-center text-center w-1/3 px-2">
+                <span className="text-3xl" role="img" aria-label="Link">🔗</span>
                 <h3 className="font-display font-semibold text-slate-900 mt-3 text-[15px]">Share</h3>
                 <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
-                  Send everyone the link.
+                  Everyone cuts dates they can&apos;t do
                 </p>
               </div>
+              {/* Arrow */}
+              <span className="text-slate-300 text-xl mt-1 shrink-0" aria-hidden="true">&rarr;</span>
               {/* Step 3 */}
-              <div className="relative flex flex-col items-center text-center w-1/3 px-2">
-                <div className="w-[30px] h-[30px] rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white text-xs font-bold shadow-md shadow-emerald-600/30 z-10">
-                  3
-                </div>
+              <div className="flex flex-col items-center text-center w-1/3 px-2">
+                <span className="text-3xl" role="img" aria-label="Bullseye">🎯</span>
                 <h3 className="font-display font-semibold text-slate-900 mt-3 text-[15px]">Decide</h3>
                 <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
-                  People cut dates they can&apos;t do, see what&apos;s left.
+                  Pick from the dates that survive
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Mobile: vertical timeline */}
+          {/* Mobile: vertical steps */}
           <div className="sm:hidden">
-            <div className="relative flex flex-col gap-5 text-center">
-              {/* Vertical connecting line — pinned to left edge of card */}
-              <div
-                className="absolute left-0 top-[12px] w-[2px]"
-                style={{ background: 'linear-gradient(to bottom, #0d9488, #d97706, #059669)', height: 'calc(100% - 48px)' }}
-              />
+            <div className="flex flex-col gap-4 text-center">
               {/* Step 1 */}
-              <div className="relative">
-                <div className="absolute -left-3 top-0 w-6 h-6 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center text-white text-[10px] font-bold shadow-md shadow-teal-600/30 z-10">
-                  1
-                </div>
-                <p className="font-display font-semibold text-slate-900 text-sm leading-6">Pick</p>
-                <p className="text-xs text-slate-500">Choose some possible dates.</p>
+              <div>
+                <span className="text-2xl" role="img" aria-label="Lightbulb">💡</span>
+                <p className="font-display font-semibold text-slate-900 text-sm leading-6">Propose</p>
+                <p className="text-xs text-slate-500">Choose some possible dates</p>
               </div>
+              <span className="text-slate-300 text-lg" aria-hidden="true">&darr;</span>
               {/* Step 2 */}
-              <div className="relative">
-                <div className="absolute -left-3 top-0 w-6 h-6 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-white text-[10px] font-bold shadow-md shadow-amber-600/30 z-10">
-                  2
-                </div>
+              <div>
+                <span className="text-2xl" role="img" aria-label="Link">🔗</span>
                 <p className="font-display font-semibold text-slate-900 text-sm leading-6">Share</p>
-                <p className="text-xs text-slate-500">Send everyone the link.</p>
+                <p className="text-xs text-slate-500">Everyone cuts dates they can&apos;t do</p>
               </div>
+              <span className="text-slate-300 text-lg" aria-hidden="true">&darr;</span>
               {/* Step 3 */}
-              <div className="relative">
-                <div className="absolute -left-3 top-0 w-6 h-6 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white text-[10px] font-bold shadow-md shadow-emerald-600/30 z-10">
-                  3
-                </div>
+              <div>
+                <span className="text-2xl" role="img" aria-label="Bullseye">🎯</span>
                 <p className="font-display font-semibold text-slate-900 text-sm leading-6">Decide</p>
-                <p className="text-xs text-slate-500">People cut dates they can&apos;t do, see what&apos;s left.</p>
+                <p className="text-xs text-slate-500">Pick from the dates that survive</p>
               </div>
             </div>
           </div>
