@@ -59,7 +59,7 @@ export default function Home() {
                 <span className="text-3xl" role="img" aria-label="Lightbulb">💡</span>
                 <h3 className="font-display font-semibold text-slate-900 mt-3 text-[15px]">Propose</h3>
                 <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
-                  Choose some possible dates
+                  Choose some possible days
                 </p>
               </div>
               {/* Arrow */}
@@ -69,7 +69,7 @@ export default function Home() {
                 <span className="text-3xl" role="img" aria-label="Link">🔗</span>
                 <h3 className="font-display font-semibold text-slate-900 mt-3 text-[15px]">Share</h3>
                 <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
-                  Everyone cuts dates they can&apos;t do
+                  Everyone cuts days they can&apos;t do
                 </p>
               </div>
               {/* Arrow */}
@@ -79,7 +79,7 @@ export default function Home() {
                 <span className="text-3xl" role="img" aria-label="Bullseye">🎯</span>
                 <h3 className="font-display font-semibold text-slate-900 mt-3 text-[15px]">Decide</h3>
                 <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
-                  Pick from the dates that survive
+                  Pick from the days that survive
                 </p>
               </div>
             </div>
@@ -92,21 +92,21 @@ export default function Home() {
               <div>
                 <span className="text-2xl" role="img" aria-label="Lightbulb">💡</span>
                 <p className="font-display font-semibold text-slate-900 text-sm leading-6">Propose</p>
-                <p className="text-xs text-slate-500">Choose some possible dates</p>
+                <p className="text-xs text-slate-500">Choose some possible days</p>
               </div>
               <span className="text-slate-300 text-lg" aria-hidden="true">&darr;</span>
               {/* Step 2 */}
               <div>
                 <span className="text-2xl" role="img" aria-label="Link">🔗</span>
                 <p className="font-display font-semibold text-slate-900 text-sm leading-6">Share</p>
-                <p className="text-xs text-slate-500">Everyone cuts dates they can&apos;t do</p>
+                <p className="text-xs text-slate-500">Everyone cuts days they can&apos;t do</p>
               </div>
               <span className="text-slate-300 text-lg" aria-hidden="true">&darr;</span>
               {/* Step 3 */}
               <div>
                 <span className="text-2xl" role="img" aria-label="Bullseye">🎯</span>
                 <p className="font-display font-semibold text-slate-900 text-sm leading-6">Decide</p>
-                <p className="text-xs text-slate-500">Pick from the dates that survive</p>
+                <p className="text-xs text-slate-500">Pick from the days that survive</p>
               </div>
             </div>
           </div>
