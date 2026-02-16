@@ -78,13 +78,44 @@ export default function PlanStatusControls({
     )
   }
 
+  async function handleUnlock() {
+    setLoading('unlock')
+    setError(null)
+    try {
+      const res = await fetch(`/api/plans/manage?planId=${planId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'active' }),
+      })
+
+      if (res.ok) {
+        onStatusChanged('active')
+      } else {
+        setError('Something went wrong. Please try again.')
+        setTimeout(() => setError(null), 3000)
+      }
+    } catch {
+      setError('Network error. Please try again.')
+      setTimeout(() => setError(null), 3000)
+    } finally {
+      setLoading(null)
+    }
+  }
+
   if (currentStatus === 'locked') {
     return (
       <div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-50 text-slate-600 ring-1 ring-slate-200">
             Locked
           </span>
+          <button
+            onClick={handleUnlock}
+            disabled={loading !== null}
+            className="px-3 py-1.5 text-sm font-semibold text-teal-600 border border-teal-200/60 rounded-xl hover:bg-teal-50 disabled:opacity-50 transition-all"
+          >
+            {loading === 'unlock' ? 'Unlocking...' : 'Unlock Plan'}
+          </button>
           <button
             onClick={() => {
               setConfirmDelete(true)

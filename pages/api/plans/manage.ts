@@ -35,8 +35,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       if (status) {
-        if (status !== 'locked' && status !== 'deleted') {
-          return res.status(400).json({ error: 'Status must be "locked" or "deleted"' })
+        if (status !== 'locked' && status !== 'deleted' && status !== 'active') {
+          return res.status(400).json({ error: 'Status must be "locked", "active", or "deleted"' })
         }
         const result = await updatePlanStatus(planId, userId, status)
         return res.status(200).json(result)

@@ -278,7 +278,7 @@ export async function getAvailabilityMatrix(planId: string) {
 export async function updatePlanStatus(
   planId: string,
   clerkId: string,
-  status: 'locked' | 'deleted'
+  status: 'locked' | 'deleted' | 'active'
 ) {
   const { data: plan, error: planErr } = await supabaseAdmin
     .from('plans')
@@ -305,7 +305,7 @@ export async function updatePlanStatus(
   }
 
   // Log event
-  const eventType = status === 'locked' ? 'plan_locked' : 'plan_deleted'
+  const eventType = status === 'locked' ? 'plan_locked' : status === 'active' ? 'plan_unlocked' : 'plan_deleted'
   await supabaseAdmin.from('event_log').insert({
     plan_id: planId,
     event_type: eventType,
