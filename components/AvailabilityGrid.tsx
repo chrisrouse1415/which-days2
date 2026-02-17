@@ -325,9 +325,9 @@ export default function AvailabilityGrid({
                 </p>
               </div>
 
-              {date.unavailableBy.length > 0 && (
+              {date.unavailableBy.filter((u) => u.participantId !== participantId).length > 0 && (
                 <p className="text-[10px] text-slate-400 text-center mb-1.5 truncate">
-                  {date.unavailableBy.map((u) => u.displayName).join(', ')} can&apos;t
+                  {date.unavailableBy.filter((u) => u.participantId !== participantId).map((u) => u.displayName).join(', ')} can&apos;t
                 </p>
               )}
 
