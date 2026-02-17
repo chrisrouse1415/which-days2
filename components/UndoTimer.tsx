@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 
 interface UndoTimerProps {
   deadline: number // timestamp in ms
@@ -13,6 +13,8 @@ export default function UndoTimer({ deadline, disabled, onExpired, onUndo }: Und
   }, [deadline])
 
   const [secondsLeft, setSecondsLeft] = useState(getSecondsLeft)
+  const onExpiredRef = useRef(onExpired)
+  onExpiredRef.current = onExpired
 
   useEffect(() => {
     setSecondsLeft(getSecondsLeft())
@@ -22,12 +24,12 @@ export default function UndoTimer({ deadline, disabled, onExpired, onUndo }: Und
       setSecondsLeft(remaining)
       if (remaining <= 0) {
         clearInterval(interval)
-        onExpired()
+        onExpiredRef.current()
       }
     }, 1000)
 
     return () => clearInterval(interval)
-  }, [deadline, getSecondsLeft, onExpired])
+  }, [deadline, getSecondsLeft])
 
   if (secondsLeft <= 0) return null
 

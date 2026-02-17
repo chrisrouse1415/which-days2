@@ -222,59 +222,6 @@ export async function getPlanForOwner(planId: string, clerkId: string) {
   return { plan, dates: dates ?? [], participants: participants ?? [] }
 }
 
-export async function getAvailabilityMatrix(planId: string) {
-  const { data: dates, error: datesErr } = await supabaseAdmin
-    .from('plan_dates')
-    .select()
-    .eq('plan_id', planId)
-    .order('date', { ascending: true })
-
-  if (datesErr) {
-    logger.error('Error fetching plan dates for matrix', { planId }, datesErr)
-    throw datesErr
-  }
-
-  if (!dates || dates.length === 0) return { dates: [], participants: [], matrix: {} }
-
-  const { data: participants, error: pErr } = await supabaseAdmin
-    .from('participants')
-    .select()
-    .eq('plan_id', planId)
-    .order('created_at', { ascending: true })
-
-  if (pErr) {
-    logger.error('Error fetching participants for matrix', { planId }, pErr)
-    throw pErr
-  }
-
-  const dateIds = dates.map((d) => d.id)
-  const { data: availability, error: aErr } = await supabaseAdmin
-    .from('availability')
-    .select()
-    .in('plan_date_id', dateIds)
-
-  if (aErr) {
-    logger.error('Error fetching availability for matrix', { planId }, aErr)
-    throw aErr
-  }
-
-  // Build matrix: { [planDateId]: { [participantId]: 'available' | 'unavailable' } }
-  const matrix: Record<string, Record<string, string>> = {}
-  for (const d of dates) {
-    matrix[d.id] = {}
-    for (const p of participants ?? []) {
-      matrix[d.id][p.id] = 'available'
-    }
-  }
-  for (const a of availability ?? []) {
-    if (matrix[a.plan_date_id]) {
-      matrix[a.plan_date_id][a.participant_id] = a.status
-    }
-  }
-
-  return { dates, participants: participants ?? [], matrix }
-}
-
 export async function updatePlanStatus(
   planId: string,
   clerkId: string,
@@ -292,6 +239,16 @@ export async function updatePlanStatus(
 
   if (plan.owner_clerk_id !== clerkId) {
     throw new NotOwnerError()
+  }
+
+  // Prevent re-activating deleted plans
+  if (plan.status === 'deleted') {
+    throw new ValidationError('Deleted plans cannot be modified')
+  }
+
+  // Only locked plans can be unlocked (set to active)
+  if (status === 'active' && plan.status !== 'locked') {
+    throw new ValidationError('Only locked plans can be unlocked')
   }
 
   const { error: updateErr } = await supabaseAdmin

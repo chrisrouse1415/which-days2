@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useUser } from '@clerk/nextjs'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
@@ -49,6 +50,12 @@ export default function Dashboard() {
     fetcher
   )
 
+  useEffect(() => {
+    if (isLoaded && !isSignedIn) {
+      router.replace('/')
+    }
+  }, [isLoaded, isSignedIn, router])
+
   if (!isLoaded) {
     return (
       <div className="min-h-screen bg-warm-gradient flex items-center justify-center">
@@ -57,8 +64,7 @@ export default function Dashboard() {
     )
   }
 
-  if (isLoaded && !isSignedIn) {
-    router.replace('/')
+  if (!isSignedIn) {
     return null
   }
 

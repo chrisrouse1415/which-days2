@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useUser } from '@clerk/nextjs'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
@@ -100,6 +101,18 @@ export default function ManagePlan() {
     mutate()
   }
 
+  useEffect(() => {
+    if (isLoaded && !isSignedIn) {
+      router.replace('/')
+    }
+  }, [isLoaded, isSignedIn, router])
+
+  useEffect(() => {
+    if (error?.message === 'unauthorized') {
+      router.replace('/')
+    }
+  }, [error, router])
+
   if (!isLoaded) {
     return (
       <div className="min-h-screen bg-warm-gradient flex items-center justify-center">
@@ -108,8 +121,7 @@ export default function ManagePlan() {
     )
   }
 
-  if (isLoaded && !isSignedIn) {
-    router.replace('/')
+  if (!isSignedIn) {
     return null
   }
 
@@ -123,11 +135,6 @@ export default function ManagePlan() {
       ? 'Plan not found.'
       : 'Failed to load plan.'
     : null
-
-  if (error?.message === 'unauthorized') {
-    router.replace('/')
-    return null
-  }
 
   return (
     <div className="min-h-screen bg-warm-gradient bg-question-pattern bg-grain">

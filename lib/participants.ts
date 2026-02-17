@@ -47,29 +47,31 @@ export async function getPlanByShareId(shareId: string) {
     throw new PlanNotFoundError()
   }
 
-  const { data: dates, error: datesError } = await supabaseAdmin
-    .from('plan_dates')
-    .select()
-    .eq('plan_id', plan.id)
-    .order('date', { ascending: true })
+  // Fetch dates and participants in parallel
+  const [datesResult, participantsResult] = await Promise.all([
+    supabaseAdmin
+      .from('plan_dates')
+      .select()
+      .eq('plan_id', plan.id)
+      .order('date', { ascending: true }),
+    supabaseAdmin
+      .from('participants')
+      .select()
+      .eq('plan_id', plan.id)
+      .order('created_at', { ascending: true }),
+  ])
 
-  if (datesError) {
-    logger.error('Error fetching plan dates', { shareId, planId: plan.id }, datesError)
-    throw datesError
+  if (datesResult.error) {
+    logger.error('Error fetching plan dates', { shareId, planId: plan.id }, datesResult.error)
+    throw datesResult.error
   }
 
-  const { data: participants, error: participantsError } = await supabaseAdmin
-    .from('participants')
-    .select()
-    .eq('plan_id', plan.id)
-    .order('created_at', { ascending: true })
-
-  if (participantsError) {
-    logger.error('Error fetching participants', { shareId, planId: plan.id }, participantsError)
-    throw participantsError
+  if (participantsResult.error) {
+    logger.error('Error fetching participants', { shareId, planId: plan.id }, participantsResult.error)
+    throw participantsResult.error
   }
 
-  return { plan, dates: dates ?? [], participants: participants ?? [] }
+  return { plan, dates: datesResult.data ?? [], participants: participantsResult.data ?? [] }
 }
 
 export async function joinPlan(shareId: string, displayName: string) {
