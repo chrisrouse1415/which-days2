@@ -10,14 +10,15 @@ import {
   ValidationError,
 } from '../../../lib/plans'
 import { logger } from '../../../lib/logger'
+import { isValidUUID } from '../../../lib/validation'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     const userId = await requireAuth(req)
     const planId = req.query.planId as string | undefined
 
-    if (!planId) {
-      return res.status(400).json({ error: 'Missing planId parameter' })
+    if (!isValidUUID(planId)) {
+      return res.status(400).json({ error: 'Missing or invalid planId parameter' })
     }
 
     if (req.method === 'GET') {
@@ -27,6 +28,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (req.method === 'PATCH') {
       const { status, title, dates, reset } = req.body
+
+      // Ensure only one operation type per request
+      const opCount = [reset === true, !!status, title !== undefined || dates !== undefined].filter(Boolean).length
+      if (opCount > 1) {
+        return res.status(400).json({ error: 'Only one operation allowed per request: reset, status change, or edit' })
+      }
 
       if (reset === true) {
         await resetPlan(planId, userId)

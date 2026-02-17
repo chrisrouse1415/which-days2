@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import UndoTimer from './UndoTimer'
+import { getDateParts } from '../lib/format-date'
 
 interface AvailabilitySummaryDate {
   planDateId: string
@@ -33,22 +34,6 @@ interface AvailabilityGridProps {
   onDataRefresh: () => void
 }
 
-function formatDate(dateStr: string): string {
-  const date = new Date(dateStr + 'T00:00:00')
-  return date.toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  })
-}
-
-function getDateParts(dateStr: string) {
-  const date = new Date(dateStr + 'T00:00:00')
-  const weekday = date.toLocaleDateString('en-US', { weekday: 'short' })
-  const monthDay = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-  return { weekday, monthDay }
-}
-
 
 export default function AvailabilityGrid({
   participantId,
@@ -62,6 +47,7 @@ export default function AvailabilityGrid({
   const [optimisticDates, setOptimisticDates] = useState<Record<string, 'eliminated'>>({})
   const [optimisticMy, setOptimisticMy] = useState<Record<string, 'unavailable'>>({})
   const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set())
+  const [error, setError] = useState<string | null>(null)
   const prevIsDone = useRef(isDone)
 
   // When participant marks done, clear all undo timers immediately
@@ -145,6 +131,9 @@ export default function AvailabilityGrid({
           return next
         })
         setUndoPending((prev) => prev.filter((u) => u.planDateId !== planDateId))
+        const data = await res.json().catch(() => ({}))
+        setError(data.error || 'Failed to update. Please try again.')
+        setTimeout(() => setError(null), 3000)
         return
       }
 
@@ -226,26 +215,65 @@ export default function AvailabilityGrid({
     onDataRefresh()
   }
 
-  if (planStatus === 'locked' || planStatus === 'deleted') {
-    const isLocked = planStatus === 'locked'
+  if (planStatus === 'deleted') {
     return (
       <div className="space-y-3">
         <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
           Your Availability
         </h3>
-        <div
-          className={`rounded-2xl p-5 ${
-            isLocked
-              ? 'bg-teal-50/80 border border-teal-200/60'
-              : 'bg-slate-50/80 border border-slate-200/60'
-          }`}
-          role="alert"
-        >
-          <p className={`text-sm font-medium ${isLocked ? 'text-teal-800' : 'text-slate-600'}`}>
-            {isLocked
-              ? 'This plan is locked — no more changes allowed.'
-              : 'This plan has been deleted.'}
+        <div className="rounded-2xl p-5 bg-slate-50/80 border border-slate-200/60" role="alert">
+          <p className="text-sm font-medium text-slate-600">This plan has been deleted.</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (planStatus === 'locked') {
+    return (
+      <div className="space-y-3">
+        <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+          Your Availability
+        </h3>
+        <div className="rounded-2xl p-4 bg-teal-50/80 border border-teal-200/60 mb-3" role="alert">
+          <p className="text-sm font-medium text-teal-800">
+            This plan is locked — no more changes allowed.
           </p>
+        </div>
+        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
+          {availabilitySummary.map((date) => {
+            const myStatus = getMyStatus(date.planDateId)
+            const isEliminated = date.status === 'eliminated'
+            const { weekday, monthDay } = getDateParts(date.date)
+
+            return (
+              <div
+                key={date.planDateId}
+                className={`flex flex-col rounded-2xl border p-2.5 ${
+                  isEliminated
+                    ? 'bg-slate-50/60 border-slate-200/40'
+                    : 'bg-white/80 border-white/80 shadow-warm'
+                }`}
+              >
+                <div className="text-center mb-1.5">
+                  <p className={`text-sm font-bold leading-tight ${isEliminated ? 'text-slate-300 line-through' : 'text-slate-800'}`}>
+                    {weekday}
+                  </p>
+                  <p className={`text-xs ${isEliminated ? 'text-slate-300 line-through' : 'text-slate-400'}`}>
+                    {monthDay}
+                  </p>
+                </div>
+                <div className="mt-auto">
+                  {myStatus === 'unavailable' ? (
+                    <p className="text-[10px] text-slate-400 text-center py-1">Can&apos;t do this</p>
+                  ) : isEliminated ? (
+                    <p className="text-[10px] text-slate-400 text-center py-1">Eliminated</p>
+                  ) : (
+                    <p className="text-[10px] text-emerald-500 text-center py-1">Available</p>
+                  )}
+                </div>
+              </div>
+            )
+          })}
         </div>
       </div>
     )
@@ -256,6 +284,10 @@ export default function AvailabilityGrid({
       <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
         Your Availability
       </h3>
+
+      {error && (
+        <p className="text-xs text-rose-600 bg-rose-50/80 border border-rose-200/60 rounded-xl px-3 py-2" role="alert">{error}</p>
+      )}
 
       <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
         {availabilitySummary.map((date) => {
@@ -313,6 +345,8 @@ export default function AvailabilityGrid({
                   <p className="text-[10px] text-slate-400 text-center py-1">Can&apos;t do this</p>
                 ) : eliminatedByOthers ? (
                   <p className="text-[10px] text-slate-400 text-center py-1">Eliminated</p>
+                ) : isDone ? (
+                  <p className="text-[10px] text-emerald-500 text-center py-1">Available</p>
                 ) : (
                   <button
                     onClick={() => handleToggle(date.planDateId)}

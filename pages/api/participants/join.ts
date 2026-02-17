@@ -8,6 +8,7 @@ import {
 } from '../../../lib/participants'
 import { logger } from '../../../lib/logger'
 import { checkRateLimit } from '../../../lib/rate-limit'
+import { isValidShareId, isNonEmptyString } from '../../../lib/validation'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -19,8 +20,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const { shareId, displayName } = req.body
 
-    if (!shareId || !displayName) {
-      return res.status(400).json({ error: 'Missing shareId or displayName' })
+    if (!isValidShareId(shareId) || !isNonEmptyString(displayName)) {
+      return res.status(400).json({ error: 'Missing or invalid shareId or displayName' })
     }
 
     const participant = await joinPlan(shareId, displayName)

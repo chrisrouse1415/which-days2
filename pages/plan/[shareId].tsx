@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
 import Link from 'next/link'
@@ -158,6 +158,7 @@ export default function PlanShare({ og }: PlanShareProps) {
     : null
 
   const { data: planData, error, isLoading, mutate } = useSWR<PlanData>(swrKey, fetcher, {
+    refreshInterval: 30000, // Poll every 30s for other participants' changes
     onSuccess: (data) => {
       if (participantId) {
         const me = data.participants.find((p) => p.id === participantId)
@@ -174,13 +175,14 @@ export default function PlanShare({ og }: PlanShareProps) {
   })
 
   // Initialize participantId from localStorage once shareId becomes available (router hydration)
-  if (shareId && participantId === null && typeof window !== 'undefined') {
-    const storedId = localStorage.getItem(getStorageKey(shareId))
-    if (storedId) {
-      // This will trigger a re-render with the correct SWR key
-      setParticipantId(storedId)
+  useEffect(() => {
+    if (shareId && participantId === null) {
+      const storedId = localStorage.getItem(getStorageKey(shareId))
+      if (storedId) {
+        setParticipantId(storedId)
+      }
     }
-  }
+  }, [shareId, participantId])
 
   function handleJoined(newParticipantId: string) {
     if (!shareId) return
@@ -247,14 +249,24 @@ export default function PlanShare({ og }: PlanShareProps) {
         ) : phase === 'loading' ? (
           <PlanSkeleton />
         ) : phase === 'join' && planData ? (
-          <div className="py-8">
-            <JoinForm
-              shareId={shareId!}
-              planTitle={planData.plan.title}
-              ownerName={planData.ownerName}
-              onJoined={handleJoined}
-            />
-          </div>
+          planData.plan.status !== 'active' ? (
+            <div className="text-center py-16">
+              <p className="text-slate-600 text-sm">
+                {planData.plan.status === 'locked'
+                  ? 'This plan is locked and no longer accepting participants.'
+                  : 'This plan is no longer available.'}
+              </p>
+            </div>
+          ) : (
+            <div className="py-8">
+              <JoinForm
+                shareId={shareId!}
+                planTitle={planData.plan.title}
+                ownerName={planData.ownerName}
+                onJoined={handleJoined}
+              />
+            </div>
+          )
         ) : phase === 'availability' && planData && participantId ? (
           <div className="space-y-6">
             <div>

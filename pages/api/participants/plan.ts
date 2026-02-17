@@ -3,6 +3,7 @@ import { PlanNotFoundError } from '../../../lib/participants'
 import { supabaseAdmin } from '../../../lib/supabase-admin'
 import { logger } from '../../../lib/logger'
 import { checkRateLimit } from '../../../lib/rate-limit'
+import { isValidShareId, isValidUUID } from '../../../lib/validation'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
@@ -15,8 +16,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const shareId = req.query.shareId as string | undefined
     const participantId = req.query.participantId as string | undefined
 
-    if (!shareId) {
-      return res.status(400).json({ error: 'Missing shareId parameter' })
+    if (!shareId || !isValidShareId(shareId)) {
+      return res.status(400).json({ error: 'Invalid or missing shareId parameter' })
+    }
+
+    if (participantId && !isValidUUID(participantId)) {
+      return res.status(400).json({ error: 'Invalid participantId parameter' })
     }
 
     // Query 1: Fetch plan by share ID
@@ -127,8 +132,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       needs_review: p.needs_review,
     }))
 
+    // Strip sensitive fields from plan before sending to participants
+    const safePlan = {
+      id: plan.id,
+      title: plan.title,
+      share_id: plan.share_id,
+      status: plan.status,
+      created_at: plan.created_at,
+    }
+
     return res.status(200).json({
-      plan,
+      plan: safePlan,
       ownerName,
       dates,
       participants: safeParticipants,

@@ -1,3 +1,5 @@
+import { formatDate } from '../lib/format-date'
+
 interface DateSummary {
   planDateId: string
   date: string
@@ -15,15 +17,6 @@ interface Participant {
 interface LiveSummaryProps {
   participants: Participant[]
   availabilitySummary: DateSummary[]
-}
-
-function formatDate(dateStr: string): string {
-  const date = new Date(dateStr + 'T00:00:00')
-  return date.toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  })
 }
 
 export default function LiveSummary({

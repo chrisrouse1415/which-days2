@@ -7,6 +7,7 @@ import {
   ValidationError,
 } from '../../../lib/plans'
 import { logger } from '../../../lib/logger'
+import { isValidUUID } from '../../../lib/validation'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -17,8 +18,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const userId = await requireAuth(req)
     const { planId, planDateId } = req.body
 
-    if (!planId || !planDateId) {
-      return res.status(400).json({ error: 'Missing planId or planDateId' })
+    if (!isValidUUID(planId) || !isValidUUID(planDateId)) {
+      return res.status(400).json({ error: 'Missing or invalid planId or planDateId' })
     }
 
     const result = await forceReopenDate(planId, planDateId, userId)

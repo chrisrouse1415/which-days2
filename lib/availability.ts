@@ -24,24 +24,23 @@ export class DateLockedError extends Error {
 }
 
 export async function toggleUnavailable(participantId: string, planDateId: string) {
-  // Fetch participant
-  const { data: participant, error: pErr } = await supabaseAdmin
-    .from('participants')
-    .select()
-    .eq('id', participantId)
-    .single()
+  // Fetch participant and plan date in parallel
+  const [participantResult, planDateResult] = await Promise.all([
+    supabaseAdmin.from('participants').select().eq('id', participantId).single(),
+    supabaseAdmin.from('plan_dates').select().eq('id', planDateId).single(),
+  ])
 
+  const { data: participant, error: pErr } = participantResult
   if (pErr || !participant) {
     throw new ParticipantNotFoundError()
   }
 
-  // Fetch plan date and verify same plan
-  const { data: planDate, error: pdErr } = await supabaseAdmin
-    .from('plan_dates')
-    .select()
-    .eq('id', planDateId)
-    .single()
+  // Participants who have marked "done" cannot change availability
+  if (participant.is_done) {
+    throw new PlanNotActiveError('You must un-mark "done" before changing availability')
+  }
 
+  const { data: planDate, error: pdErr } = planDateResult
   if (pdErr || !planDate) {
     throw new Error('Date not found')
   }

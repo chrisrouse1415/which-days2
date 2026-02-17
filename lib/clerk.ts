@@ -3,15 +3,31 @@ import { supabaseAdmin } from './supabase-admin'
 import { logger } from './logger'
 import type { NextApiRequest } from 'next'
 
-export async function syncUserToSupabase(userId: string, userData: any) {
+interface UserSyncData {
+  emailAddresses?: Array<{ emailAddress: string }>
+  firstName?: string | null
+  lastName?: string | null
+  email_addresses?: Array<{ email_address: string }>
+  first_name?: string | null
+  last_name?: string | null
+}
+
+export async function syncUserToSupabase(userId: string, userData: UserSyncData) {
+  // Handle both camelCase (Clerk SDK) and snake_case (webhook payload) formats
+  const email =
+    userData.emailAddresses?.[0]?.emailAddress ??
+    userData.email_addresses?.[0]?.email_address
+  const firstName = userData.firstName ?? userData.first_name
+  const lastName = userData.lastName ?? userData.last_name
+
   const { data, error } = await supabaseAdmin
     .from('users')
     .upsert(
       {
         clerk_id: userId,
-        email: userData.emailAddresses?.[0]?.emailAddress,
-        first_name: userData.firstName,
-        last_name: userData.lastName,
+        email,
+        first_name: firstName,
+        last_name: lastName,
         updated_at: new Date().toISOString(),
       },
       { onConflict: 'clerk_id' }

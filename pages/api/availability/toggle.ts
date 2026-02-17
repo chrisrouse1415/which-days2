@@ -3,6 +3,7 @@ import { toggleUnavailable, DateLockedError } from '../../../lib/availability'
 import { ParticipantNotFoundError, PlanNotActiveError } from '../../../lib/participants'
 import { logger } from '../../../lib/logger'
 import { checkRateLimit } from '../../../lib/rate-limit'
+import { isValidUUID } from '../../../lib/validation'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -14,8 +15,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const { participantId, planDateId } = req.body
 
-    if (!participantId || !planDateId) {
-      return res.status(400).json({ error: 'Missing participantId or planDateId' })
+    if (!isValidUUID(participantId) || !isValidUUID(planDateId)) {
+      return res.status(400).json({ error: 'Missing or invalid participantId or planDateId' })
     }
 
     const result = await toggleUnavailable(participantId, planDateId)

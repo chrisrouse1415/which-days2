@@ -1,4 +1,5 @@
 import ForceReopenButton from './ForceReopenButton'
+import { formatDate } from '../lib/format-date'
 
 interface PlanDate {
   id: string
@@ -19,15 +20,6 @@ interface ResultsMatrixProps {
   participants: Participant[]
   matrix: Record<string, Record<string, string>>
   onDataRefresh: () => void
-}
-
-function formatDate(dateStr: string): string {
-  const date = new Date(dateStr + 'T00:00:00')
-  return date.toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  })
 }
 
 function StatusBadge({ status }: { status: string }) {
