@@ -70,7 +70,7 @@ export default function Dashboard() {
 
   const plans = data?.plans ?? []
   const countedPlans = plans.filter((p) => p.status === 'active' || p.status === 'locked')
-  const maxPlans = 3
+  const maxPlans = 5
 
   return (
     <div className="min-h-screen bg-warm-gradient bg-question-pattern bg-grain">

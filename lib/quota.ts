@@ -1,7 +1,7 @@
 import { supabaseAdmin } from './supabase-admin'
 import { logger } from './logger'
 
-const MAX_PLANS = 3
+const MAX_PLANS = 5
 
 export async function getPlanCount(ownerClerkId: string): Promise<number> {
   const { count, error } = await supabaseAdmin
