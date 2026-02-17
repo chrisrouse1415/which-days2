@@ -150,15 +150,22 @@ export default function PlanForm({
       </div>
 
       {/* Submit */}
-      <button
-        type="submit"
-        disabled={isSubmitting || (!isEdit && quota && !quota.canCreate)}
-        className="w-full rounded-xl bg-gradient-to-r from-teal-600 to-teal-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-teal-600/25 hover:shadow-xl hover:shadow-teal-600/30 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-lg transition-all duration-200"
-      >
-        {isSubmitting
-          ? (isEdit ? 'Saving...' : 'Creating...')
-          : (isEdit ? 'Save Changes' : 'Create Plan')}
-      </button>
+      <div>
+        <button
+          type="submit"
+          disabled={isSubmitting || (!isEdit && quota && !quota.canCreate)}
+          className="w-full rounded-xl bg-gradient-to-r from-teal-600 to-teal-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-teal-600/25 hover:shadow-xl hover:shadow-teal-600/30 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-lg transition-all duration-200"
+        >
+          {isSubmitting
+            ? (isEdit ? 'Saving...' : 'Creating...')
+            : (isEdit ? 'Save Changes' : 'Create Plan')}
+        </button>
+        {!isEdit && quota && !quota.canCreate && (
+          <p className="text-xs text-slate-400 text-center mt-2">
+            Plan limit reached — lock or delete a plan to free a slot
+          </p>
+        )}
+      </div>
     </form>
   )
 }
