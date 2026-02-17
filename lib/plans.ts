@@ -68,7 +68,7 @@ export async function createPlan(ownerClerkId: string, input: PlanInput) {
   const quota = await checkQuota(ownerClerkId)
   if (!quota.canCreate) {
     throw new QuotaExceededError(
-      `You have reached the maximum of ${quota.maxPlans} active plans. Delete or lock an existing plan to create a new one.`
+      `You have reached the maximum of ${quota.maxPlans} plans. Delete an existing plan to create a new one.`
     )
   }
 

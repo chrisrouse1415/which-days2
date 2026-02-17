@@ -1,17 +1,17 @@
 import { supabaseAdmin } from './supabase-admin'
 import { logger } from './logger'
 
-const MAX_ACTIVE_PLANS = 3
+const MAX_PLANS = 3
 
-export async function getActivePlanCount(ownerClerkId: string): Promise<number> {
+export async function getPlanCount(ownerClerkId: string): Promise<number> {
   const { count, error } = await supabaseAdmin
     .from('plans')
     .select('*', { count: 'exact', head: true })
     .eq('owner_clerk_id', ownerClerkId)
-    .eq('status', 'active')
+    .in('status', ['active', 'locked'])
 
   if (error) {
-    logger.error('Error counting active plans', { userId: ownerClerkId }, error)
+    logger.error('Error counting plans', { userId: ownerClerkId }, error)
     throw error
   }
 
@@ -19,11 +19,11 @@ export async function getActivePlanCount(ownerClerkId: string): Promise<number> 
 }
 
 export async function checkQuota(ownerClerkId: string) {
-  const activePlanCount = await getActivePlanCount(ownerClerkId)
+  const planCount = await getPlanCount(ownerClerkId)
 
   return {
-    activePlanCount,
-    maxPlans: MAX_ACTIVE_PLANS,
-    canCreate: activePlanCount < MAX_ACTIVE_PLANS,
+    planCount,
+    maxPlans: MAX_PLANS,
+    canCreate: planCount < MAX_PLANS,
   }
 }

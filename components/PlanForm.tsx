@@ -3,7 +3,7 @@ import { useRouter } from 'next/router'
 import DatePicker from './DatePicker'
 
 interface QuotaInfo {
-  activePlanCount: number
+  planCount: number
   maxPlans: number
   canCreate: boolean
 }
@@ -49,7 +49,7 @@ export default function PlanForm({
     const uniqueDates = Array.from(new Set(dates))
 
     if (!isEdit && quota && !quota.canCreate) {
-      setError(`You've reached the limit of ${quota.maxPlans} active plans`)
+      setError(`You've reached the limit of ${quota.maxPlans} plans`)
       return
     }
 
@@ -104,12 +104,12 @@ export default function PlanForm({
               <div
                 key={i}
                 className={`w-2 h-2 rounded-full ${
-                  i < quota.activePlanCount ? 'bg-teal-500' : 'bg-slate-200'
+                  i < quota.planCount ? 'bg-teal-500' : 'bg-slate-200'
                 }`}
               />
             ))}
           </div>
-          <span>{quota.activePlanCount} / {quota.maxPlans} active</span>
+          <span>{quota.planCount} / {quota.maxPlans} plans</span>
           {!quota.canCreate && (
             <span className="text-rose-600 font-semibold">
               Limit reached
