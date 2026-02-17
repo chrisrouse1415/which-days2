@@ -63,7 +63,7 @@ export default function Dashboard() {
   }
 
   const plans = data?.plans ?? []
-  const activePlans = plans.filter((p) => p.status === 'active')
+  const countedPlans = plans.filter((p) => p.status === 'active' || p.status === 'locked')
   const maxPlans = 3
 
   return (
@@ -86,15 +86,15 @@ export default function Dashboard() {
                 <div
                   key={i}
                   className={`w-2 h-2 rounded-full transition-colors ${
-                    i < activePlans.length ? 'bg-teal-500' : 'bg-slate-200'
+                    i < countedPlans.length ? 'bg-teal-500' : 'bg-slate-200'
                   }`}
                 />
               ))}
               <span className="text-xs text-slate-400 ml-1">
-                {activePlans.length}/{maxPlans}
+                {countedPlans.length}/{maxPlans}
               </span>
             </div>
-            {activePlans.length < maxPlans && (
+            {countedPlans.length < maxPlans && (
               <Link
                 href="/create"
                 className="px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-teal-600 to-teal-500 rounded-xl shadow-md shadow-teal-600/20 hover:shadow-lg hover:shadow-teal-600/25 hover:-translate-y-0.5 transition-all duration-200"

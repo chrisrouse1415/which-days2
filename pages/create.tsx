@@ -5,7 +5,7 @@ import PlanForm from '../components/PlanForm'
 import LoginButton from '../components/LoginButton'
 
 interface QuotaInfo {
-  activePlanCount: number
+  planCount: number
   maxPlans: number
   canCreate: boolean
 }
