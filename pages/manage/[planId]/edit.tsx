@@ -4,6 +4,7 @@ import { useRouter } from 'next/router'
 import Link from 'next/link'
 import PlanForm from '../../../components/PlanForm'
 import LoginButton from '../../../components/LoginButton'
+import Layout, { CenteredPage } from '../../../components/Layout'
 
 export default function EditPlanPage() {
   const { isSignedIn, isLoaded } = useUser()
@@ -23,6 +24,8 @@ export default function EditPlanPage() {
     }
     if (!planId) return
 
+    let cancelled = false
+
     async function fetchPlan() {
       try {
         const res = await fetch(`/api/plans/manage?planId=${planId}`)
@@ -33,12 +36,15 @@ export default function EditPlanPage() {
         }
         if (!res.ok) {
           const data = await res.json()
-          setError(data.error || 'Failed to load plan')
-          setLoading(false)
+          if (!cancelled) {
+            setError(data.error || 'Failed to load plan')
+            setLoading(false)
+          }
           return
         }
 
         const data = await res.json()
+        if (cancelled) return
 
         if (data.plan.status !== 'active') {
           setError('Only active plans can be edited')
@@ -49,50 +55,47 @@ export default function EditPlanPage() {
         setInitialTitle(data.plan.title)
         setInitialDates(data.dates.map((d: { date: string }) => d.date))
       } catch {
-        setError('Network error. Please try again.')
+        if (!cancelled) setError('Network error. Please try again.')
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     }
 
     fetchPlan()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => {
+      cancelled = true
+    }
   }, [isLoaded, isSignedIn, planId, router])
 
   if (!isLoaded || loading) {
     return (
-      <div className="min-h-screen bg-warm-gradient flex items-center justify-center">
-        <p className="text-slate-400">Loading...</p>
-      </div>
+      <CenteredPage>
+        <p className="text-stone-400">Loading&hellip;</p>
+      </CenteredPage>
     )
   }
 
   return (
-    <div className="min-h-screen bg-warm-gradient bg-question-pattern bg-grain">
-      <header className="glass-header border-b border-teal-100/50 sticky top-0 z-30">
-        <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between gap-4 min-w-0">
-          <h1 className="text-xl font-display font-semibold text-teal-900 tracking-tight">Edit Plan</h1>
-          <LoginButton />
-        </div>
-      </header>
+    <Layout homeHref={planId ? `/manage/${planId}` : '/dashboard'} headerRight={<LoginButton />}>
+      <div className="mx-auto max-w-lg">
+        <h1 className="mb-8 font-display text-2xl font-semibold tracking-tight text-ink">
+          Edit plan
+        </h1>
 
-      <main id="main-content" className="max-w-3xl mx-auto px-4 py-8">
         {error ? (
-          <div className="text-center py-16">
-            <p className="text-rose-600 mb-4">{error}</p>
-            <Link href={planId ? `/manage/${planId}` : '/dashboard'} className="text-sm font-medium text-teal-600 hover:text-teal-800 transition-colors">
+          <div className="py-16 text-center">
+            <p className="mb-4 text-cut-600">{error}</p>
+            <Link
+              href={planId ? `/manage/${planId}` : '/dashboard'}
+              className="text-sm font-medium text-pine-700 transition-colors hover:text-pine-800"
+            >
               Back to plan
             </Link>
           </div>
         ) : initialTitle !== null && initialDates !== null && planId ? (
-          <PlanForm
-            mode="edit"
-            planId={planId}
-            initialTitle={initialTitle}
-            initialDates={initialDates}
-          />
+          <PlanForm mode="edit" planId={planId} initialTitle={initialTitle} initialDates={initialDates} />
         ) : null}
-      </main>
-    </div>
+      </div>
+    </Layout>
   )
 }

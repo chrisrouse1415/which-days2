@@ -3,6 +3,7 @@ import { useUser } from '@clerk/nextjs'
 import Link from 'next/link'
 import PlanForm from '../components/PlanForm'
 import LoginButton from '../components/LoginButton'
+import Layout, { CenteredPage } from '../components/Layout'
 
 interface QuotaInfo {
   planCount: number
@@ -39,54 +40,50 @@ export default function CreatePage() {
 
   if (!isLoaded) {
     return (
-      <div className="min-h-screen bg-warm-gradient flex items-center justify-center">
-        <p className="text-slate-400">Loading...</p>
-      </div>
+      <CenteredPage>
+        <p className="text-stone-400">Loading&hellip;</p>
+      </CenteredPage>
     )
   }
 
   if (!isSignedIn) {
     return (
-      <div className="min-h-screen bg-warm-gradient flex flex-col items-center justify-center gap-4">
-        <p className="text-slate-500">Sign in to create a plan</p>
+      <CenteredPage>
+        <p className="text-stone-500">Sign in to create a plan</p>
         <LoginButton />
-      </div>
+      </CenteredPage>
     )
   }
 
   return (
-    <div className="min-h-screen bg-warm-gradient bg-question-pattern bg-grain">
-      <header className="glass-header border-b border-teal-100/50 sticky top-0 z-30">
-        <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between gap-4 min-w-0">
-          <Link href="/" className="text-xl font-display font-semibold text-teal-900 hover:text-teal-700 transition-colors tracking-tight">
-            Which Days?
+    <Layout
+      headerRight={
+        <div className="flex items-center gap-4">
+          <Link
+            href="/dashboard"
+            className="text-sm font-medium text-pine-700 transition-colors hover:text-pine-800"
+          >
+            My plans
           </Link>
-          <div className="flex items-center gap-3">
-            <Link
-              href="/dashboard"
-              className="text-sm font-medium text-teal-600 hover:text-teal-800 transition-colors"
-            >
-              My Plans
-            </Link>
-            <LoginButton />
-          </div>
+          <LoginButton />
         </div>
-      </header>
+      }
+    >
+      <div className="mx-auto max-w-lg">
+        <h1 className="mb-8 font-display text-2xl font-semibold tracking-tight text-ink">
+          Create a plan
+        </h1>
 
-      <main id="main-content" className="max-w-3xl mx-auto px-4 py-8">
-        <h1 className="font-display text-2xl font-bold text-slate-900 tracking-tight mb-8">Create a Plan</h1>
-        {loading && (
-          <p className="text-center text-slate-400">Loading...</p>
-        )}
+        {loading && <p className="text-center text-stone-400">Loading&hellip;</p>}
 
         {error && (
-          <div className="max-w-lg mx-auto p-3 text-sm text-rose-700 bg-rose-50/80 border border-rose-200/60 rounded-xl">
+          <div className="rounded-lg border border-cut-200 bg-cut-50 p-3 text-sm text-cut-700" role="alert">
             {error}
           </div>
         )}
 
         {quota && <PlanForm quota={quota} />}
-      </main>
-    </div>
+      </div>
+    </Layout>
   )
 }

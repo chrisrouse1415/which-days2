@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import Link from 'next/link'
+import StatusBadge from './StatusBadge'
 
 interface PlanStatusControlsProps {
   planId: string
@@ -17,135 +18,99 @@ export default function PlanStatusControls({
   editHref,
 }: PlanStatusControlsProps) {
   const [loading, setLoading] = useState<string | null>(null)
-  const [confirmDelete, setConfirmDelete] = useState(false)
-  const [confirmReset, setConfirmReset] = useState(false)
+  const [confirming, setConfirming] = useState<'delete' | 'reset' | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  async function handleStatusChange(status: 'locked' | 'deleted') {
-    setLoading(status)
+  function showError(message: string) {
+    setError(message)
+    setTimeout(() => setError(null), 3000)
+  }
+
+  async function patchPlan(body: Record<string, unknown>, loadingKey: string): Promise<boolean> {
+    setLoading(loadingKey)
     setError(null)
     try {
       const res = await fetch(`/api/plans/manage?planId=${planId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify(body),
       })
 
-      if (res.ok) {
-        onStatusChanged(status)
-        setConfirmDelete(false)
-      } else {
-        setError('Something went wrong. Please try again.')
-        setTimeout(() => setError(null), 3000)
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        showError(data.error || 'Something went wrong. Please try again.')
+        return false
       }
+      return true
     } catch {
-      setError('Network error. Please try again.')
-      setTimeout(() => setError(null), 3000)
+      showError('Network error. Please try again.')
+      return false
     } finally {
       setLoading(null)
+    }
+  }
+
+  async function handleStatusChange(status: 'locked' | 'deleted' | 'active') {
+    if (await patchPlan({ status }, status)) {
+      setConfirming(null)
+      onStatusChanged(status)
     }
   }
 
   async function handleReset() {
-    setLoading('reset')
-    setError(null)
-    try {
-      const res = await fetch(`/api/plans/manage?planId=${planId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reset: true }),
-      })
-
-      if (res.ok) {
-        setConfirmReset(false)
-        if (onDataRefresh) onDataRefresh()
-      } else {
-        const data = await res.json()
-        setError(data.error || 'Something went wrong. Please try again.')
-        setTimeout(() => setError(null), 3000)
-      }
-    } catch {
-      setError('Network error. Please try again.')
-      setTimeout(() => setError(null), 3000)
-    } finally {
-      setLoading(null)
+    if (await patchPlan({ reset: true }, 'reset')) {
+      setConfirming(null)
+      if (onDataRefresh) onDataRefresh()
     }
   }
 
   if (currentStatus === 'deleted') {
-    return (
-      <p className="text-sm text-slate-400">This plan has been deleted.</p>
-    )
+    return <p className="text-sm text-stone-400">This plan has been deleted.</p>
   }
 
-  async function handleUnlock() {
-    setLoading('unlock')
-    setError(null)
-    try {
-      const res = await fetch(`/api/plans/manage?planId=${planId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'active' }),
-      })
+  const smallBtn = '!px-3 !py-1.5 !text-xs'
 
-      if (res.ok) {
-        onStatusChanged('active')
-      } else {
-        setError('Something went wrong. Please try again.')
-        setTimeout(() => setError(null), 3000)
-      }
-    } catch {
-      setError('Network error. Please try again.')
-      setTimeout(() => setError(null), 3000)
-    } finally {
-      setLoading(null)
-    }
-  }
+  const deleteConfirm = confirming === 'delete' && (
+    <div className="flex items-center gap-2.5 rounded-lg border border-cut-200 bg-cut-50 p-3">
+      <span className="text-sm text-cut-700">Delete this plan? Participants lose access.</span>
+      <button
+        onClick={() => handleStatusChange('deleted')}
+        disabled={loading !== null}
+        className={`btn-danger-solid ${smallBtn}`}
+      >
+        {loading === 'deleted' ? 'Deleting…' : 'Yes, delete'}
+      </button>
+      <button onClick={() => setConfirming(null)} className={`btn-secondary ${smallBtn}`}>
+        Cancel
+      </button>
+    </div>
+  )
 
   if (currentStatus === 'locked') {
     return (
-      <div>
+      <div className="space-y-3">
         <div className="flex flex-wrap items-center gap-3">
-          <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-50 text-slate-600 ring-1 ring-slate-200">
-            Locked
-          </span>
+          <StatusBadge status="locked" />
           <button
-            onClick={handleUnlock}
+            onClick={() => handleStatusChange('active')}
             disabled={loading !== null}
-            className="px-3 py-1.5 text-sm font-semibold text-teal-600 border border-teal-200/60 rounded-xl hover:bg-teal-50 disabled:opacity-50 transition-all"
+            className="btn-secondary !px-3.5 !py-1.5"
           >
-            {loading === 'unlock' ? 'Unlocking...' : 'Unlock Plan'}
+            {loading === 'active' ? 'Unlocking…' : 'Unlock plan'}
           </button>
           <button
-            onClick={() => {
-              setConfirmDelete(true)
-            }}
+            onClick={() => setConfirming('delete')}
             disabled={loading !== null}
-            className="px-3 py-1.5 text-sm font-semibold text-rose-600 border border-rose-200/60 rounded-xl hover:bg-rose-50 disabled:opacity-50 transition-all"
+            className="btn-danger !px-3.5 !py-1.5"
           >
-            Delete Plan
+            Delete plan
           </button>
-          {confirmDelete && (
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-rose-600">Are you sure?</span>
-              <button
-                onClick={() => handleStatusChange('deleted')}
-                disabled={loading !== null}
-                className="px-2.5 py-1 text-xs font-semibold text-white bg-rose-600 rounded-lg hover:bg-rose-700 disabled:opacity-50 transition-all"
-              >
-                {loading === 'deleted' ? 'Deleting...' : 'Yes, delete'}
-              </button>
-              <button
-                onClick={() => setConfirmDelete(false)}
-                className="px-2.5 py-1 text-xs font-semibold text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-all"
-              >
-                Cancel
-              </button>
-            </div>
-          )}
         </div>
+        {deleteConfirm}
         {error && (
-          <p className="mt-1 text-xs text-rose-600" role="alert">{error}</p>
+          <p className="text-xs text-cut-600" role="alert">
+            {error}
+          </p>
         )}
       </div>
     )
@@ -155,83 +120,56 @@ export default function PlanStatusControls({
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2.5">
         {editHref && (
-          <Link
-            href={editHref}
-            className="px-3.5 py-1.5 text-sm font-semibold text-teal-600 border border-teal-200/60 rounded-xl hover:bg-teal-50 hover:border-teal-300 transition-all"
-          >
-            Edit Plan
+          <Link href={editHref} className="btn-secondary !px-3.5 !py-1.5">
+            Edit plan
           </Link>
         )}
         <button
           onClick={() => handleStatusChange('locked')}
           disabled={loading !== null}
-          className="px-3.5 py-1.5 text-sm font-semibold text-slate-600 border border-slate-200/60 rounded-xl hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50 transition-all"
+          className="btn-secondary !px-3.5 !py-1.5"
         >
-          {loading === 'locked' ? 'Locking...' : 'Lock Plan'}
+          {loading === 'locked' ? 'Locking…' : 'Lock plan'}
         </button>
         <button
-          onClick={() => {
-            setConfirmReset(false)
-            setConfirmDelete(true)
-          }}
+          onClick={() => setConfirming('reset')}
           disabled={loading !== null}
-          className="px-3.5 py-1.5 text-sm font-semibold text-rose-600 border border-rose-200/60 rounded-xl hover:bg-rose-50 disabled:opacity-50 transition-all"
+          className="btn-secondary !px-3.5 !py-1.5"
         >
-          Delete Plan
+          Reset responses
         </button>
         <button
-          onClick={() => {
-            setConfirmDelete(false)
-            setConfirmReset(true)
-          }}
+          onClick={() => setConfirming('delete')}
           disabled={loading !== null}
-          className="px-3.5 py-1.5 text-sm font-semibold text-amber-700 border border-amber-200/60 rounded-xl hover:bg-amber-50 disabled:opacity-50 transition-all"
+          className="btn-danger !px-3.5 !py-1.5"
         >
-          Reset Plan
+          Delete plan
         </button>
       </div>
-      {confirmDelete && (
-        <div className="flex items-center gap-2 p-3.5 bg-rose-50/80 border border-rose-200/60 rounded-xl">
-          <span className="text-sm text-rose-600">Are you sure?</span>
-          <button
-            onClick={() => handleStatusChange('deleted')}
-            disabled={loading !== null}
-            className="px-2.5 py-1 text-xs font-semibold text-white bg-rose-600 rounded-lg hover:bg-rose-700 disabled:opacity-50 transition-all"
-          >
-            {loading === 'deleted' ? 'Deleting...' : 'Yes, delete'}
-          </button>
-          <button
-            onClick={() => setConfirmDelete(false)}
-            className="px-2.5 py-1 text-xs font-semibold text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-all"
-          >
-            Cancel
-          </button>
-        </div>
-      )}
-      {confirmReset && (
-        <div className="p-3.5 bg-amber-50/80 border border-amber-200/60 rounded-xl space-y-2.5">
+      {deleteConfirm}
+      {confirming === 'reset' && (
+        <div className="space-y-2.5 rounded-lg border border-amber-200 bg-amber-50 p-3.5">
           <p className="text-sm text-amber-800">
-            This will remove all participants and their votes. The plan title and dates will be kept. Are you sure?
+            This removes all participants and their responses. The plan title and dates are kept.
           </p>
           <div className="flex items-center gap-2">
             <button
               onClick={handleReset}
               disabled={loading !== null}
-              className="px-2.5 py-1 text-xs font-semibold text-white bg-amber-600 rounded-lg hover:bg-amber-700 disabled:opacity-50 transition-all"
+              className={`btn ${smallBtn} bg-amber-600 text-white hover:bg-amber-700`}
             >
-              {loading === 'reset' ? 'Resetting...' : 'Yes, reset'}
+              {loading === 'reset' ? 'Resetting…' : 'Yes, reset'}
             </button>
-            <button
-              onClick={() => setConfirmReset(false)}
-              className="px-2.5 py-1 text-xs font-semibold text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-all"
-            >
+            <button onClick={() => setConfirming(null)} className={`btn-secondary ${smallBtn}`}>
               Cancel
             </button>
           </div>
         </div>
       )}
       {error && (
-        <p className="text-xs text-rose-600" role="alert">{error}</p>
+        <p className="text-xs text-cut-600" role="alert">
+          {error}
+        </p>
       )}
     </div>
   )

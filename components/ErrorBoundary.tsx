@@ -24,14 +24,11 @@ export default class ErrorBoundary extends React.Component<
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50/30 flex items-center justify-center px-4">
-          <div className="text-center space-y-4">
-            <h1 className="text-xl font-semibold text-slate-900">Something went wrong</h1>
-            <p className="text-sm text-slate-500">An unexpected error occurred.</p>
-            <button
-              onClick={() => this.setState({ hasError: false })}
-              className="px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-lg shadow-md shadow-teal-600/20 hover:bg-teal-700 transition-colors"
-            >
+        <div className="flex min-h-screen items-center justify-center bg-paper px-4">
+          <div className="space-y-4 text-center">
+            <h1 className="font-display text-xl font-semibold text-ink">Something went wrong</h1>
+            <p className="text-sm text-stone-500">An unexpected error occurred.</p>
+            <button onClick={() => this.setState({ hasError: false })} className="btn-primary">
               Try again
             </button>
           </div>

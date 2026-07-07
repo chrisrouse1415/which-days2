@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { undoUnavailable, UndoExpiredError, UndoNotAllowedError } from '../../../lib/availability'
-import { logger } from '../../../lib/logger'
+import { undoUnavailable } from '../../../lib/availability'
+import { sendApiError } from '../../../lib/api-errors'
 import { checkRateLimit } from '../../../lib/rate-limit'
 import { isValidUUID } from '../../../lib/validation'
 
@@ -22,14 +22,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     return res.status(200).json(result)
   } catch (error) {
-    if (error instanceof UndoNotAllowedError) {
-      return res.status(403).json({ error: error.message })
-    }
-    if (error instanceof UndoExpiredError) {
-      return res.status(410).json({ error: error.message })
-    }
-
-    logger.error('Unexpected error undoing availability', { route: 'availability/undo', participantId: req.body?.participantId }, error)
-    return res.status(500).json({ error: 'Internal server error' })
+    return sendApiError(res, error, { route: 'availability/undo', participantId: req.body?.participantId })
   }
 }

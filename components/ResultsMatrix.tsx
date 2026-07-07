@@ -1,4 +1,5 @@
 import ForceReopenButton from './ForceReopenButton'
+import StatusBadge from './StatusBadge'
 import { formatDate } from '../lib/format-date'
 
 interface PlanDate {
@@ -22,31 +23,6 @@ interface ResultsMatrixProps {
   onDataRefresh: () => void
 }
 
-function StatusBadge({ status }: { status: string }) {
-  if (status === 'viable' || status === 'reopened') {
-    return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/60">
-        {status === 'reopened' ? 'reopened' : 'viable'}
-      </span>
-    )
-  }
-  if (status === 'eliminated') {
-    return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-rose-50 text-rose-600 ring-1 ring-rose-200/60">
-        eliminated
-      </span>
-    )
-  }
-  if (status === 'locked') {
-    return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-slate-50 text-slate-600 ring-1 ring-slate-200">
-        locked
-      </span>
-    )
-  }
-  return null
-}
-
 export default function ResultsMatrix({
   planId,
   planStatus,
@@ -56,52 +32,57 @@ export default function ResultsMatrix({
   onDataRefresh,
 }: ResultsMatrixProps) {
   if (dates.length === 0) {
-    return <p className="text-sm text-slate-400">No dates in this plan.</p>
+    return <p className="text-sm text-stone-400">No dates in this plan.</p>
   }
 
   if (participants.length === 0) {
     return (
-      <div className="bg-white/80 backdrop-blur-sm border border-white/80 rounded-2xl p-8 text-center shadow-warm">
-        <p className="text-sm text-slate-500">No participants yet. Share the link to get started.</p>
+      <div className="card p-8 text-center">
+        <p className="text-sm font-medium text-ink">No responses yet</p>
+        <p className="mt-1 text-sm text-stone-500">
+          Share the link above &mdash; responses appear here as they come in.
+        </p>
       </div>
     )
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full text-sm border border-slate-200/60 rounded-2xl overflow-hidden shadow-warm">
+    <div className="card overflow-x-auto">
+      <table className="min-w-full text-sm">
         <thead>
-          <tr className="bg-slate-50/80">
-            <th className="px-3 py-2.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-200/60 sticky left-0 bg-slate-50/80 z-10">
+          <tr className="bg-stone-50">
+            <th className="sticky left-0 z-10 border-b border-stone-200 bg-stone-50 px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-stone-500">
               Date
             </th>
-            <th className="px-3 py-2.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-200/60">
+            <th className="border-b border-stone-200 px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-stone-500">
               Status
             </th>
             {participants.map((p) => (
               <th
                 key={p.id}
-                className="px-3 py-2.5 text-center text-xs font-semibold text-slate-500 border-b border-slate-200/60"
+                className="border-b border-stone-200 px-3 py-2.5 text-center text-xs font-semibold text-stone-600"
               >
                 <span className="block">{p.display_name}</span>
-                {p.is_done && (
-                  <span className="text-violet-500 text-xs font-medium">done</span>
-                )}
+                {p.is_done && <span className="text-xs font-medium text-pine-600">done</span>}
               </th>
             ))}
             {planStatus === 'active' && (
-              <th className="px-3 py-2.5 text-center text-xs font-semibold text-slate-400 border-b border-slate-200/60">
+              <th className="border-b border-stone-200 px-3 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-stone-500">
                 Actions
               </th>
             )}
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-200/40">
+        <tbody className="divide-y divide-stone-100">
           {dates.map((date) => {
             const isEliminated = date.status === 'eliminated'
             return (
-              <tr key={date.id} className={isEliminated ? 'bg-slate-50/40' : 'bg-white/60'}>
-                <td className={`px-3 py-2.5 font-semibold whitespace-nowrap sticky left-0 z-10 ${isEliminated ? 'text-slate-400 line-through bg-slate-50/40' : 'text-slate-800 bg-white/60'}`}>
+              <tr key={date.id} className={isEliminated ? 'bg-stone-50' : 'bg-white'}>
+                <td
+                  className={`sticky left-0 z-10 whitespace-nowrap px-3 py-2.5 font-semibold ${
+                    isEliminated ? 'struck bg-stone-50' : 'bg-white text-ink'
+                  }`}
+                >
                   {formatDate(date.date)}
                 </td>
                 <td className="px-3 py-2.5">
@@ -112,11 +93,11 @@ export default function ResultsMatrix({
                   return (
                     <td key={p.id} className="px-3 py-2.5 text-center">
                       {status === 'unavailable' ? (
-                        <span className="text-rose-400" title="Unavailable">
+                        <span className="font-medium text-cut-500" title="Unavailable" aria-label="Unavailable">
                           &#x2717;
                         </span>
                       ) : (
-                        <span className="text-emerald-500" title="Available">
+                        <span className="font-medium text-pine-600" title="Available" aria-label="Available">
                           &#x2713;
                         </span>
                       )}
@@ -124,7 +105,7 @@ export default function ResultsMatrix({
                   )
                 })}
                 {planStatus === 'active' && (
-                  <td className="px-3 py-2.5 text-center min-w-[44px] min-h-[44px]">
+                  <td className="min-h-[44px] min-w-[44px] px-3 py-2.5 text-center">
                     {date.status === 'eliminated' && (
                       <ForceReopenButton
                         planId={planId}

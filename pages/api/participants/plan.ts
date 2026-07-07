@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { PlanNotFoundError } from '../../../lib/participants'
+import { PlanNotFoundError } from '../../../lib/errors'
+import { sendApiError } from '../../../lib/api-errors'
 import { supabaseAdmin } from '../../../lib/supabase-admin'
 import { logger } from '../../../lib/logger'
 import { checkRateLimit } from '../../../lib/rate-limit'
@@ -79,7 +80,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (dateIds.length > 0) {
       const { data: avail, error: availErr } = await supabaseAdmin
         .from('availability')
-        .select()
+        .select('id, participant_id, plan_date_id, status')
         .in('plan_date_id', dateIds)
 
       if (availErr) {
@@ -144,7 +145,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(200).json({
       plan: safePlan,
       ownerName,
-      dates,
       participants: safeParticipants,
       availabilitySummary: summary,
       myAvailability,
@@ -152,11 +152,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       needsReview,
     })
   } catch (error) {
-    if (error instanceof PlanNotFoundError) {
-      return res.status(404).json({ error: error.message })
-    }
-
-    logger.error('Unexpected error fetching plan', { route: 'participants/plan', shareId: req.query.shareId as string }, error)
-    return res.status(500).json({ error: 'Internal server error' })
+    return sendApiError(res, error, { route: 'participants/plan', shareId: req.query.shareId as string })
   }
 }

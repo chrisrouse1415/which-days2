@@ -2,20 +2,13 @@ import { nanoid } from 'nanoid'
 import { supabaseAdmin } from './supabase-admin'
 import { checkQuota } from './quota'
 import { logger } from './logger'
-
-export class QuotaExceededError extends Error {
-  constructor(message = 'Plan quota exceeded') {
-    super(message)
-    this.name = 'QuotaExceededError'
-  }
-}
-
-export class ValidationError extends Error {
-  constructor(message: string) {
-    super(message)
-    this.name = 'ValidationError'
-  }
-}
+import { MAX_DATES, MAX_TITLE_LENGTH } from './constants'
+import {
+  NotOwnerError,
+  PlanNotFoundError,
+  QuotaExceededError,
+  ValidationError,
+} from './errors'
 
 interface PlanInput {
   title: string
@@ -27,36 +20,36 @@ interface EditPlanInput {
   dates?: string[]
 }
 
-export async function createPlan(ownerClerkId: string, input: PlanInput) {
-  const { title, dates } = input
-
-  // Validate title
-  const trimmedTitle = title.trim()
-  if (!trimmedTitle) {
+function validateTitle(title: unknown): string {
+  if (typeof title !== 'string') {
     throw new ValidationError('Title is required')
   }
-  if (trimmedTitle.length > 100) {
-    throw new ValidationError('Title must be 100 characters or fewer')
+  const trimmed = title.trim()
+  if (!trimmed) {
+    throw new ValidationError('Title is required')
   }
+  if (trimmed.length > MAX_TITLE_LENGTH) {
+    throw new ValidationError(`Title must be ${MAX_TITLE_LENGTH} characters or fewer`)
+  }
+  return trimmed
+}
 
-  // Validate dates
-  if (!dates || dates.length === 0) {
+function validateDates(dates: unknown): string[] {
+  if (!Array.isArray(dates) || dates.length === 0) {
     throw new ValidationError('At least one date is required')
   }
-  if (dates.length > 30) {
-    throw new ValidationError('Maximum 30 dates allowed')
+  if (dates.length > MAX_DATES) {
+    throw new ValidationError(`Maximum ${MAX_DATES} dates allowed`)
   }
 
-  // Check for duplicate dates
   const uniqueDates = Array.from(new Set(dates))
   if (uniqueDates.length !== dates.length) {
     throw new ValidationError('Duplicate dates are not allowed')
   }
 
-  // Validate date format
   for (const date of uniqueDates) {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      throw new ValidationError(`Invalid date format: ${date}`)
+    if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      throw new ValidationError(`Invalid date format: ${String(date)}`)
     }
     const parsed = new Date(date + 'T00:00:00')
     if (isNaN(parsed.getTime())) {
@@ -64,7 +57,29 @@ export async function createPlan(ownerClerkId: string, input: PlanInput) {
     }
   }
 
-  // Check quota
+  return uniqueDates as string[]
+}
+
+async function getOwnedPlan(planId: string, clerkId: string) {
+  const { data: plan, error } = await supabaseAdmin
+    .from('plans')
+    .select()
+    .eq('id', planId)
+    .single()
+
+  if (error || !plan) {
+    throw new PlanNotFoundError()
+  }
+  if (plan.owner_clerk_id !== clerkId) {
+    throw new NotOwnerError()
+  }
+  return plan
+}
+
+export async function createPlan(ownerClerkId: string, input: PlanInput) {
+  const trimmedTitle = validateTitle(input.title)
+  const uniqueDates = validateDates(input.dates)
+
   const quota = await checkQuota(ownerClerkId)
   if (!quota.canCreate) {
     throw new QuotaExceededError(
@@ -72,10 +87,8 @@ export async function createPlan(ownerClerkId: string, input: PlanInput) {
     )
   }
 
-  // Generate share ID
   const shareId = nanoid(10)
 
-  // Insert plan
   const { data: plan, error: planError } = await supabaseAdmin
     .from('plans')
     .insert({
@@ -91,7 +104,6 @@ export async function createPlan(ownerClerkId: string, input: PlanInput) {
     throw planError
   }
 
-  // Insert dates
   const dateRows = uniqueDates.sort().map((date) => ({
     plan_id: plan.id,
     date,
@@ -109,7 +121,6 @@ export async function createPlan(ownerClerkId: string, input: PlanInput) {
     throw datesError
   }
 
-  // Log event
   await supabaseAdmin.from('event_log').insert({
     plan_id: plan.id,
     event_type: 'plan_created',
@@ -121,20 +132,6 @@ export async function createPlan(ownerClerkId: string, input: PlanInput) {
     planDates,
     shareUrl: `/plan/${shareId}`,
     manageUrl: `/manage/${plan.id}`,
-  }
-}
-
-export class PlanNotFoundError extends Error {
-  constructor(message = 'Plan not found') {
-    super(message)
-    this.name = 'PlanNotFoundError'
-  }
-}
-
-export class NotOwnerError extends Error {
-  constructor(message = 'You do not own this plan') {
-    super(message)
-    this.name = 'NotOwnerError'
   }
 }
 
@@ -155,7 +152,6 @@ export async function getOwnerPlans(clerkId: string) {
 
   const planIds = plans.map((p) => p.id)
 
-  // Fetch participant counts and done counts per plan
   const { data: participants, error: pErr } = await supabaseAdmin
     .from('participants')
     .select('plan_id, is_done')
@@ -183,43 +179,31 @@ export async function getOwnerPlans(clerkId: string) {
 }
 
 export async function getPlanForOwner(planId: string, clerkId: string) {
-  const { data: plan, error: planErr } = await supabaseAdmin
-    .from('plans')
-    .select()
-    .eq('id', planId)
-    .single()
+  const plan = await getOwnedPlan(planId, clerkId)
 
-  if (planErr || !plan) {
-    throw new PlanNotFoundError()
+  const [datesResult, participantsResult] = await Promise.all([
+    supabaseAdmin
+      .from('plan_dates')
+      .select()
+      .eq('plan_id', planId)
+      .order('date', { ascending: true }),
+    supabaseAdmin
+      .from('participants')
+      .select()
+      .eq('plan_id', planId)
+      .order('created_at', { ascending: true }),
+  ])
+
+  if (datesResult.error) {
+    logger.error('Error fetching plan dates', { planId }, datesResult.error)
+    throw datesResult.error
+  }
+  if (participantsResult.error) {
+    logger.error('Error fetching participants', { planId }, participantsResult.error)
+    throw participantsResult.error
   }
 
-  if (plan.owner_clerk_id !== clerkId) {
-    throw new NotOwnerError()
-  }
-
-  const { data: dates, error: datesErr } = await supabaseAdmin
-    .from('plan_dates')
-    .select()
-    .eq('plan_id', planId)
-    .order('date', { ascending: true })
-
-  if (datesErr) {
-    logger.error('Error fetching plan dates', { planId }, datesErr)
-    throw datesErr
-  }
-
-  const { data: participants, error: pErr } = await supabaseAdmin
-    .from('participants')
-    .select()
-    .eq('plan_id', planId)
-    .order('created_at', { ascending: true })
-
-  if (pErr) {
-    logger.error('Error fetching participants', { planId }, pErr)
-    throw pErr
-  }
-
-  return { plan, dates: dates ?? [], participants: participants ?? [] }
+  return { plan, dates: datesResult.data ?? [], participants: participantsResult.data ?? [] }
 }
 
 export async function updatePlanStatus(
@@ -227,19 +211,7 @@ export async function updatePlanStatus(
   clerkId: string,
   status: 'locked' | 'deleted' | 'active'
 ) {
-  const { data: plan, error: planErr } = await supabaseAdmin
-    .from('plans')
-    .select()
-    .eq('id', planId)
-    .single()
-
-  if (planErr || !plan) {
-    throw new PlanNotFoundError()
-  }
-
-  if (plan.owner_clerk_id !== clerkId) {
-    throw new NotOwnerError()
-  }
+  const plan = await getOwnedPlan(planId, clerkId)
 
   // Prevent re-activating deleted plans
   if (plan.status === 'deleted') {
@@ -261,7 +233,6 @@ export async function updatePlanStatus(
     throw updateErr
   }
 
-  // Log event
   const eventType = status === 'locked' ? 'plan_locked' : status === 'active' ? 'plan_unlocked' : 'plan_deleted'
   await supabaseAdmin.from('event_log').insert({
     plan_id: planId,
@@ -273,20 +244,7 @@ export async function updatePlanStatus(
 }
 
 export async function editPlan(planId: string, clerkId: string, input: EditPlanInput) {
-  // Verify ownership + active status
-  const { data: plan, error: planErr } = await supabaseAdmin
-    .from('plans')
-    .select()
-    .eq('id', planId)
-    .single()
-
-  if (planErr || !plan) {
-    throw new PlanNotFoundError()
-  }
-
-  if (plan.owner_clerk_id !== clerkId) {
-    throw new NotOwnerError()
-  }
+  const plan = await getOwnedPlan(planId, clerkId)
 
   if (plan.status !== 'active') {
     throw new ValidationError('Only active plans can be edited')
@@ -294,15 +252,8 @@ export async function editPlan(planId: string, clerkId: string, input: EditPlanI
 
   const { title, dates } = input
 
-  // Validate title if provided
   if (title !== undefined) {
-    const trimmedTitle = title.trim()
-    if (!trimmedTitle) {
-      throw new ValidationError('Title is required')
-    }
-    if (trimmedTitle.length > 100) {
-      throw new ValidationError('Title must be 100 characters or fewer')
-    }
+    const trimmedTitle = validateTitle(title)
 
     const { error: titleErr } = await supabaseAdmin
       .from('plans')
@@ -318,30 +269,8 @@ export async function editPlan(planId: string, clerkId: string, input: EditPlanI
   // Diff and update dates if provided
   let datesChanged = false
   if (dates !== undefined) {
-    // Validate dates
-    if (!dates || dates.length === 0) {
-      throw new ValidationError('At least one date is required')
-    }
-    if (dates.length > 30) {
-      throw new ValidationError('Maximum 30 dates allowed')
-    }
+    const uniqueDates = validateDates(dates)
 
-    const uniqueDates = Array.from(new Set(dates))
-    if (uniqueDates.length !== dates.length) {
-      throw new ValidationError('Duplicate dates are not allowed')
-    }
-
-    for (const date of uniqueDates) {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-        throw new ValidationError(`Invalid date format: ${date}`)
-      }
-      const parsed = new Date(date + 'T00:00:00')
-      if (isNaN(parsed.getTime())) {
-        throw new ValidationError(`Invalid date: ${date}`)
-      }
-    }
-
-    // Fetch current dates
     const { data: currentDates, error: cdErr } = await supabaseAdmin
       .from('plan_dates')
       .select()
@@ -355,9 +284,7 @@ export async function editPlan(planId: string, clerkId: string, input: EditPlanI
     const currentDateStrings = new Set((currentDates ?? []).map((d) => d.date))
     const newDateStrings = new Set(uniqueDates)
 
-    // Dates to remove: in current but not in new
     const datesToRemove = (currentDates ?? []).filter((d) => !newDateStrings.has(d.date))
-    // Dates to add: in new but not in current
     const datesToAdd = uniqueDates.filter((d) => !currentDateStrings.has(d))
 
     if (datesToRemove.length > 0 || datesToAdd.length > 0) {
@@ -377,7 +304,6 @@ export async function editPlan(planId: string, clerkId: string, input: EditPlanI
         }
       }
 
-      // Add new dates
       if (datesToAdd.length > 0) {
         const dateRows = datesToAdd.sort().map((date) => ({
           plan_id: planId,
@@ -408,7 +334,6 @@ export async function editPlan(planId: string, clerkId: string, input: EditPlanI
     }
   }
 
-  // Log event
   await supabaseAdmin.from('event_log').insert({
     plan_id: planId,
     event_type: 'plan_edited',
@@ -422,20 +347,7 @@ export async function editPlan(planId: string, clerkId: string, input: EditPlanI
 }
 
 export async function resetPlan(planId: string, clerkId: string) {
-  // Verify ownership + active status
-  const { data: plan, error: planErr } = await supabaseAdmin
-    .from('plans')
-    .select()
-    .eq('id', planId)
-    .single()
-
-  if (planErr || !plan) {
-    throw new PlanNotFoundError()
-  }
-
-  if (plan.owner_clerk_id !== clerkId) {
-    throw new NotOwnerError()
-  }
+  const plan = await getOwnedPlan(planId, clerkId)
 
   if (plan.status !== 'active') {
     throw new ValidationError('Only active plans can be reset')
@@ -452,7 +364,6 @@ export async function resetPlan(planId: string, clerkId: string) {
     throw delErr
   }
 
-  // Reset all plan_dates back to viable
   const { error: dateErr } = await supabaseAdmin
     .from('plan_dates')
     .update({ status: 'viable' as const, reopen_version: 0, updated_at: new Date().toISOString() })
@@ -463,7 +374,6 @@ export async function resetPlan(planId: string, clerkId: string) {
     throw dateErr
   }
 
-  // Log event
   await supabaseAdmin.from('event_log').insert({
     plan_id: planId,
     event_type: 'plan_reset',
@@ -474,22 +384,8 @@ export async function resetPlan(planId: string, clerkId: string) {
 }
 
 export async function getPlanWithMatrix(planId: string, clerkId: string) {
-  // Query 1: Fetch plan + verify ownership
-  const { data: plan, error: planErr } = await supabaseAdmin
-    .from('plans')
-    .select()
-    .eq('id', planId)
-    .single()
+  const plan = await getOwnedPlan(planId, clerkId)
 
-  if (planErr || !plan) {
-    throw new PlanNotFoundError()
-  }
-
-  if (plan.owner_clerk_id !== clerkId) {
-    throw new NotOwnerError()
-  }
-
-  // Queries 2 & 3: Fetch dates + participants in parallel
   const [datesResult, participantsResult] = await Promise.all([
     supabaseAdmin
       .from('plan_dates')
@@ -515,14 +411,13 @@ export async function getPlanWithMatrix(planId: string, clerkId: string) {
   const dates = datesResult.data ?? []
   const participants = participantsResult.data ?? []
 
-  // Query 4: Fetch availability
   const dateIds = dates.map((d) => d.id)
-  let matrix: Record<string, Record<string, string>> = {}
+  const matrix: Record<string, Record<string, string>> = {}
 
   if (dateIds.length > 0) {
     const { data: availability, error: aErr } = await supabaseAdmin
       .from('availability')
-      .select()
+      .select('plan_date_id, participant_id, status')
       .in('plan_date_id', dateIds)
 
     if (aErr) {
@@ -548,20 +443,7 @@ export async function getPlanWithMatrix(planId: string, clerkId: string) {
 }
 
 export async function forceReopenDate(planId: string, planDateId: string, clerkId: string) {
-  // Verify ownership
-  const { data: plan, error: planErr } = await supabaseAdmin
-    .from('plans')
-    .select()
-    .eq('id', planId)
-    .single()
-
-  if (planErr || !plan) {
-    throw new PlanNotFoundError()
-  }
-
-  if (plan.owner_clerk_id !== clerkId) {
-    throw new NotOwnerError()
-  }
+  const plan = await getOwnedPlan(planId, clerkId)
 
   if (plan.status !== 'active') {
     throw new ValidationError('Plan is not active')
@@ -583,7 +465,6 @@ export async function forceReopenDate(planId: string, planDateId: string, clerkI
     throw new ValidationError('Date is not eliminated')
   }
 
-  // Update date: status -> reopened, bump reopen_version
   const newVersion = (planDate.reopen_version ?? 0) + 1
   const { error: dateUpdateErr } = await supabaseAdmin
     .from('plan_dates')
@@ -623,7 +504,6 @@ export async function forceReopenDate(planId: string, planDateId: string, clerkI
     throw flagErr
   }
 
-  // Log event
   await supabaseAdmin.from('event_log').insert({
     plan_id: planId,
     event_type: 'date_force_reopened',

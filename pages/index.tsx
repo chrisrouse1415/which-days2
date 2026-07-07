@@ -1,117 +1,102 @@
 import { useUser } from '@clerk/nextjs'
-import LoginButton from '../components/LoginButton'
 import Link from 'next/link'
+import LoginButton from '../components/LoginButton'
+import Layout from '../components/Layout'
+
+const demoDays = [
+  { day: 'Thu', date: 'Jun 11', note: 'Sam can’t', struck: true },
+  { day: 'Fri', date: 'Jun 12', note: 'Priya can’t', struck: true },
+  { day: 'Sat', date: 'Jun 13', note: 'Works for everyone', struck: false },
+  { day: 'Sun', date: 'Jun 14', note: 'Alex can’t', struck: true },
+]
+
+const steps = [
+  {
+    n: '1',
+    title: 'Propose',
+    body: 'Pick a handful of days that could work.',
+  },
+  {
+    n: '2',
+    title: 'Share',
+    body: 'Send one link. No accounts needed to respond.',
+  },
+  {
+    n: '3',
+    title: 'Decide',
+    body: 'Everyone crosses out days they can’t do. What’s left is your answer.',
+  },
+]
 
 export default function Home() {
   const { isSignedIn, isLoaded } = useUser()
 
   return (
-    <div className="min-h-screen bg-warm-gradient bg-question-pattern bg-grain">
-      <header className="glass-header border-b border-teal-100/50 sticky top-0 z-30">
-        <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between gap-4 min-w-0">
-          <h1 className="text-xl font-display font-semibold text-teal-900 tracking-tight">Which Days?</h1>
-          <LoginButton />
+    <Layout headerRight={<LoginButton />}>
+      <div className="py-10 sm:py-16">
+        <div className="max-w-xl">
+          <h1 className="font-display text-4xl font-semibold leading-tight tracking-tight text-ink sm:text-5xl">
+            Find a day that works for everyone.
+          </h1>
+          <p className="mt-4 text-base leading-relaxed text-stone-600">
+            Propose a few days and share one link. Everyone crosses out the days they
+            can&rsquo;t do &mdash; the days left standing are your answer.
+          </p>
         </div>
-      </header>
 
-      <main id="main-content" className="max-w-3xl mx-auto px-4 py-20 text-center">
-        <div className="mb-6">
-          <span className="inline-block text-5xl animate-bounce-once" role="img" aria-label="Calendar">🗓️</span>
+        {/* The product in one picture: days being eliminated */}
+        <div className="card mt-10 overflow-x-auto">
+          <div className="flex min-w-max divide-x divide-stone-200 sm:min-w-0">
+            {demoDays.map((d) => (
+              <div
+                key={d.date}
+                className={`flex-1 px-4 py-4 text-center sm:px-6 ${d.struck ? '' : 'bg-pine-50/60'}`}
+                aria-hidden="true"
+              >
+                <p className={`text-sm font-semibold ${d.struck ? 'struck' : 'text-ink'}`}>{d.day}</p>
+                <p className={`text-xs ${d.struck ? 'struck' : 'text-stone-500'}`}>{d.date}</p>
+                <p className={`mt-2 text-[11px] ${d.struck ? 'text-stone-400' : 'font-semibold text-pine-600'}`}>
+                  {d.note}
+                </p>
+              </div>
+            ))}
+          </div>
         </div>
-        <h2 className="font-display text-4xl sm:text-5xl font-bold text-slate-900 mb-5 leading-tight tracking-tight">
-          Find a day that works{' '}
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-emerald-500">
-            for everyone
-          </span>
-        </h2>
-        <div className="mb-10" />
-        {isLoaded && isSignedIn ? (
-          <div className="space-y-4">
-            <Link
-              href="/create"
-              className="inline-block rounded-xl bg-gradient-to-r from-teal-600 to-teal-500 px-8 py-3.5 text-sm font-semibold text-white shadow-lg shadow-teal-600/25 hover:shadow-xl hover:shadow-teal-600/30 hover:-translate-y-0.5 transition-all duration-200"
-            >
-              Create a Plan
-            </Link>
-            <div>
+
+        <div className="mt-10">
+          {isLoaded && isSignedIn ? (
+            <div className="flex flex-wrap items-center gap-4">
+              <Link href="/create" className="btn-primary !px-6 !py-3">
+                Create a plan
+              </Link>
               <Link
                 href="/dashboard"
-                className="text-sm font-medium text-teal-600 hover:text-teal-800 transition-colors"
+                className="text-sm font-medium text-pine-700 hover:text-pine-800 transition-colors"
               >
-                My Plans &rarr;
+                My plans &rarr;
               </Link>
             </div>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <p className="text-sm text-slate-400">Sign in to get started</p>
-            <LoginButton />
-          </div>
-        )}
-
-        {/* How it works — connected timeline */}
-        <div className="mt-20 bg-white/60 backdrop-blur-sm rounded-2xl shadow-warm border border-white/80 p-5 sm:p-8">
-          {/* Desktop: horizontal flow */}
-          <div className="hidden sm:block">
-            <div className="flex items-start justify-between">
-              {/* Step 1 */}
-              <div className="flex flex-col items-center text-center w-1/3 px-2">
-                <span className="text-3xl" role="img" aria-label="Lightbulb">💡</span>
-                <h3 className="font-display font-semibold text-slate-900 mt-3 text-[15px]">Propose</h3>
-                <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
-                  Choose some possible days
-                </p>
-              </div>
-              {/* Arrow */}
-              <span className="text-slate-300 text-xl mt-1 shrink-0" aria-hidden="true">&rarr;</span>
-              {/* Step 2 */}
-              <div className="flex flex-col items-center text-center w-1/3 px-2">
-                <span className="text-3xl" role="img" aria-label="Link">🔗</span>
-                <h3 className="font-display font-semibold text-slate-900 mt-3 text-[15px]">Share</h3>
-                <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
-                  Everyone cuts days they can&apos;t do
-                </p>
-              </div>
-              {/* Arrow */}
-              <span className="text-slate-300 text-xl mt-1 shrink-0" aria-hidden="true">&rarr;</span>
-              {/* Step 3 */}
-              <div className="flex flex-col items-center text-center w-1/3 px-2">
-                <span className="text-3xl" role="img" aria-label="Bullseye">🎯</span>
-                <h3 className="font-display font-semibold text-slate-900 mt-3 text-[15px]">Decide</h3>
-                <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
-                  Pick from the days that survive
-                </p>
-              </div>
+          ) : (
+            <div className="flex flex-wrap items-center gap-4">
+              <LoginButton />
+              <span className="text-sm text-stone-500">Free. Sign in to create a plan.</span>
             </div>
-          </div>
-
-          {/* Mobile: vertical steps */}
-          <div className="sm:hidden">
-            <div className="flex flex-col gap-4 text-center">
-              {/* Step 1 */}
-              <div>
-                <span className="text-2xl" role="img" aria-label="Lightbulb">💡</span>
-                <p className="font-display font-semibold text-slate-900 text-sm leading-6">Propose</p>
-                <p className="text-xs text-slate-500">Choose some possible days</p>
-              </div>
-              <span className="text-slate-300 text-lg" aria-hidden="true">&darr;</span>
-              {/* Step 2 */}
-              <div>
-                <span className="text-2xl" role="img" aria-label="Link">🔗</span>
-                <p className="font-display font-semibold text-slate-900 text-sm leading-6">Share</p>
-                <p className="text-xs text-slate-500">Everyone cuts days they can&apos;t do</p>
-              </div>
-              <span className="text-slate-300 text-lg" aria-hidden="true">&darr;</span>
-              {/* Step 3 */}
-              <div>
-                <span className="text-2xl" role="img" aria-label="Bullseye">🎯</span>
-                <p className="font-display font-semibold text-slate-900 text-sm leading-6">Decide</p>
-                <p className="text-xs text-slate-500">Pick from the days that survive</p>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
-      </main>
-    </div>
+
+        {/* How it works */}
+        <div className="mt-16 grid gap-8 border-t border-stone-200 pt-10 sm:grid-cols-3">
+          {steps.map((step) => (
+            <div key={step.n}>
+              <p className="section-label">
+                <span className="text-pine-600">{step.n}</span>
+                <span className="ml-2">{step.title}</span>
+              </p>
+              <p className="mt-2 text-sm leading-relaxed text-stone-600">{step.body}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </Layout>
   )
 }

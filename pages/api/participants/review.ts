@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { clearNeedsReview, ParticipantNotFoundError } from '../../../lib/participants'
-import { logger } from '../../../lib/logger'
+import { clearNeedsReview } from '../../../lib/participants'
+import { sendApiError } from '../../../lib/api-errors'
 import { checkRateLimit } from '../../../lib/rate-limit'
 import { isValidUUID } from '../../../lib/validation'
 
@@ -22,11 +22,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     return res.status(200).json({ needs_review: false })
   } catch (error) {
-    if (error instanceof ParticipantNotFoundError) {
-      return res.status(404).json({ error: error.message })
-    }
-
-    logger.error('Unexpected error clearing needs_review', { route: 'participants/review', participantId: req.body?.participantId }, error)
-    return res.status(500).json({ error: 'Internal server error' })
+    return sendApiError(res, error, { route: 'participants/review', participantId: req.body?.participantId })
   }
 }

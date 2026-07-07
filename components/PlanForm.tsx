@@ -1,6 +1,7 @@
 import { useState, FormEvent } from 'react'
 import { useRouter } from 'next/router'
 import DatePicker from './DatePicker'
+import { MAX_DATES, MAX_TITLE_LENGTH } from '../lib/constants'
 
 interface QuotaInfo {
   planCount: number
@@ -34,7 +35,6 @@ export default function PlanForm({
     e.preventDefault()
     setError(null)
 
-    // Client-side validation
     const trimmedTitle = title.trim()
     if (!trimmedTitle) {
       setError('Title is required')
@@ -95,39 +95,33 @@ export default function PlanForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-lg mx-auto space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6">
       {/* Quota indicator (create mode only) */}
       {!isEdit && quota && (
-        <div className="flex items-center gap-2 text-sm text-slate-500">
-          <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2 text-sm text-stone-500">
+          <div className="flex items-center gap-1" aria-hidden="true">
             {Array.from({ length: quota.maxPlans }).map((_, i) => (
               <div
                 key={i}
-                className={`w-2 h-2 rounded-full ${
-                  i < quota.planCount ? 'bg-teal-500' : 'bg-slate-200'
-                }`}
+                className={`h-2 w-2 rounded-full ${i < quota.planCount ? 'bg-pine-600' : 'bg-stone-200'}`}
               />
             ))}
           </div>
-          <span>{quota.planCount} / {quota.maxPlans} plans</span>
-          {!quota.canCreate && (
-            <span className="text-rose-600 font-semibold">
-              Limit reached
-            </span>
-          )}
+          <span>
+            {quota.planCount} of {quota.maxPlans} plans
+          </span>
+          {!quota.canCreate && <span className="font-semibold text-cut-600">Limit reached</span>}
         </div>
       )}
 
-      {/* Error message */}
       {error && (
-        <div className="p-3 text-sm text-rose-700 bg-rose-50/80 border border-rose-200/60 rounded-xl">
+        <div className="rounded-lg border border-cut-200 bg-cut-50 p-3 text-sm text-cut-700" role="alert">
           {error}
         </div>
       )}
 
-      {/* Title */}
       <div>
-        <label htmlFor="title" className="block text-sm font-medium text-slate-600 mb-1.5">
+        <label htmlFor="title" className="mb-1.5 block text-sm font-medium text-stone-700">
           Plan title
         </label>
         <input
@@ -135,34 +129,34 @@ export default function PlanForm({
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          maxLength={100}
+          maxLength={MAX_TITLE_LENGTH}
           placeholder="e.g. Team dinner this month"
-          className="block w-full rounded-xl border border-slate-200 bg-white/80 px-4 py-2.5 text-sm shadow-sm placeholder:text-slate-300 focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-400/20 transition-all"
+          className="field"
         />
       </div>
 
-      {/* Dates */}
       <div>
-        <label className="block text-sm font-medium text-slate-600 mb-2">
-          Dates
-        </label>
-        <DatePicker selectedDates={dates} onChange={setDates} maxDates={30} />
+        <label className="mb-2 block text-sm font-medium text-stone-700">Dates</label>
+        <DatePicker selectedDates={dates} onChange={setDates} maxDates={MAX_DATES} />
       </div>
 
-      {/* Submit */}
       <div>
         <button
           type="submit"
           disabled={isSubmitting || (!isEdit && quota && !quota.canCreate)}
-          className="w-full rounded-xl bg-gradient-to-r from-teal-600 to-teal-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-teal-600/25 hover:shadow-xl hover:shadow-teal-600/30 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-lg transition-all duration-200"
+          className="btn-primary w-full !py-3"
         >
           {isSubmitting
-            ? (isEdit ? 'Saving...' : 'Creating...')
-            : (isEdit ? 'Save Changes' : 'Create Plan')}
+            ? isEdit
+              ? 'Saving…'
+              : 'Creating…'
+            : isEdit
+              ? 'Save changes'
+              : 'Create plan'}
         </button>
         {!isEdit && quota && !quota.canCreate && (
-          <p className="text-xs text-slate-400 text-center mt-2">
-            Plan limit reached — lock or delete a plan to free a slot
+          <p className="mt-2 text-center text-xs text-stone-500">
+            Plan limit reached &mdash; lock or delete a plan to free a slot
           </p>
         )}
       </div>

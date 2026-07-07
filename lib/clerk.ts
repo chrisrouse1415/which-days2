@@ -1,6 +1,7 @@
 import { getAuth, clerkClient } from '@clerk/nextjs/server'
 import { supabaseAdmin } from './supabase-admin'
 import { logger } from './logger'
+import { AuthRequiredError } from './errors'
 import type { NextApiRequest } from 'next'
 
 interface UserSyncData {
@@ -63,7 +64,7 @@ export async function requireAuth(req: NextApiRequest): Promise<string> {
   const { userId } = getAuth(req)
 
   if (!userId) {
-    throw new Error('Authentication required')
+    throw new AuthRequiredError()
   }
 
   return userId

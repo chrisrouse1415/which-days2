@@ -1,4 +1,5 @@
 import { useState, FormEvent } from 'react'
+import { MAX_NAME_LENGTH } from '../lib/constants'
 
 interface JoinFormProps {
   shareId: string
@@ -21,8 +22,8 @@ export default function JoinForm({ shareId, planTitle, ownerName, onJoined }: Jo
       setError('Please enter your name')
       return
     }
-    if (trimmed.length > 50) {
-      setError('Name must be 50 characters or fewer')
+    if (trimmed.length > MAX_NAME_LENGTH) {
+      setError(`Name must be ${MAX_NAME_LENGTH} characters or fewer`)
       return
     }
 
@@ -39,7 +40,7 @@ export default function JoinForm({ shareId, planTitle, ownerName, onJoined }: Jo
 
       if (!res.ok) {
         if (res.status === 409) {
-          setError('That name is already taken')
+          setError(data.error || 'That name is already taken')
         } else {
           setError(data.error || 'Failed to join plan')
         }
@@ -55,25 +56,25 @@ export default function JoinForm({ shareId, planTitle, ownerName, onJoined }: Jo
   }
 
   return (
-    <div className="max-w-sm mx-auto">
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-warm-lg border border-white/80">
-        <div className="text-center mb-6">
-          <span className="inline-block text-5xl mb-3 animate-bounce-once" role="img" aria-label="Calendar">🗓️</span>
-          <h2 className="font-display text-2xl font-bold text-slate-900 mb-1 tracking-tight">
-            Join {ownerName ? `${ownerName}\u2019s` : 'this'} plan
+    <div className="mx-auto max-w-sm">
+      <div className="card p-8 shadow-raised">
+        <div className="mb-6">
+          <p className="section-label">You&rsquo;re invited</p>
+          <h2 className="mt-2 font-display text-2xl font-semibold tracking-tight text-ink">
+            {planTitle}
           </h2>
-          <p className="text-base text-slate-500">{planTitle}</p>
+          {ownerName && <p className="mt-1 text-sm text-stone-500">Organized by {ownerName}</p>}
         </div>
 
         {error && (
-          <div className="mb-5 p-3 text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-xl">
+          <div className="mb-5 rounded-lg border border-cut-200 bg-cut-50 p-3 text-sm text-cut-700" role="alert">
             {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="displayName" className="block text-sm font-medium text-slate-600 mb-1.5">
+            <label htmlFor="displayName" className="mb-1.5 block text-sm font-medium text-stone-700">
               Your name
             </label>
             <input
@@ -81,19 +82,18 @@ export default function JoinForm({ shareId, planTitle, ownerName, onJoined }: Jo
               type="text"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              maxLength={50}
+              maxLength={MAX_NAME_LENGTH}
               placeholder="e.g. Chris"
               autoFocus
-              className="block w-full rounded-xl border border-slate-200 bg-white/80 px-4 py-2.5 text-sm shadow-sm placeholder:text-slate-300 focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-400/20 transition-all"
+              className="field"
             />
+            <p className="mt-1.5 text-xs text-stone-400">
+              So the group knows who can&rsquo;t make which days.
+            </p>
           </div>
 
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full rounded-xl bg-gradient-to-r from-teal-600 to-teal-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-teal-600/25 hover:shadow-xl hover:shadow-teal-600/30 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-lg transition-all duration-200"
-          >
-            {isSubmitting ? 'Joining...' : 'Join Plan'}
+          <button type="submit" disabled={isSubmitting} className="btn-primary w-full !py-3">
+            {isSubmitting ? 'Joining…' : 'Join plan'}
           </button>
         </form>
       </div>

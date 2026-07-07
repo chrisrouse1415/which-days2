@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { requireAuth, getCurrentUser, syncUserToSupabase } from '../../../lib/clerk'
-import { createPlan, QuotaExceededError, ValidationError } from '../../../lib/plans'
-import { logger } from '../../../lib/logger'
+import { createPlan } from '../../../lib/plans'
+import { sendApiError } from '../../../lib/api-errors'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -28,17 +28,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       manageUrl: result.manageUrl,
     })
   } catch (error) {
-    if (error instanceof ValidationError) {
-      return res.status(400).json({ error: error.message })
-    }
-    if (error instanceof QuotaExceededError) {
-      return res.status(409).json({ error: error.message })
-    }
-    if (error instanceof Error && error.message === 'Authentication required') {
-      return res.status(401).json({ error: 'Authentication required' })
-    }
-
-    logger.error('Unexpected error creating plan', { route: 'plans/create' }, error)
-    return res.status(500).json({ error: 'Internal server error' })
+    return sendApiError(res, error, { route: 'plans/create' })
   }
 }

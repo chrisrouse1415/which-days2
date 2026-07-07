@@ -28,16 +28,19 @@ export default function NeedsReviewBanner({ participantId, onDismissed }: NeedsR
   }
 
   return (
-    <div className="bg-amber-50/80 border border-amber-200/60 rounded-2xl p-4 flex items-center justify-between gap-4" role="alert">
+    <div
+      className="flex items-center justify-between gap-4 rounded-xl border border-amber-200 bg-amber-50 p-4"
+      role="alert"
+    >
       <p className="text-sm font-medium text-amber-800">
         Dates have changed &mdash; please review your availability.
       </p>
       <button
         onClick={handleDismiss}
         disabled={dismissing}
-        className="shrink-0 px-4 py-2 min-h-[44px] text-sm font-semibold text-amber-700 bg-white border border-amber-300/60 rounded-xl hover:bg-amber-50 disabled:opacity-50 transition-all"
+        className="min-h-[44px] shrink-0 rounded-lg border border-amber-300 bg-white px-4 py-2 text-sm font-semibold text-amber-700 transition-colors hover:bg-amber-100 disabled:opacity-50"
       >
-        {dismissing ? 'Dismissing...' : 'Dismiss'}
+        {dismissing ? 'Dismissing…' : 'Got it'}
       </button>
     </div>
   )

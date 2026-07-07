@@ -9,7 +9,7 @@ interface DatePickerProps {
 function formatISO(year: number, month: number, day: number): string {
   const m = String(month + 1).padStart(2, '0')
   const d = String(day).padStart(2, '0')
-  return year + '-' + m + '-' + d
+  return `${year}-${m}-${d}`
 }
 
 function parseDateStr(s: string): { year: number; month: number; day: number } {
@@ -19,8 +19,28 @@ function parseDateStr(s: string): { year: number; month: number; day: number } {
 
 function formatDisplay(dateStr: string): string {
   const { year, month, day } = parseDateStr(dateStr)
-  const d = new Date(year, month, day)
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  return new Date(year, month, day).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
+function listDatesBetween(start: string, end: string): string[] {
+  let a = start
+  let b = end
+  if (a > b) {
+    const tmp = a
+    a = b
+    b = tmp
+  }
+
+  const result: string[] = []
+  let cur = parseDateStr(a)
+  for (;;) {
+    const s = formatISO(cur.year, cur.month, cur.day)
+    result.push(s)
+    if (s === b) break
+    const next = new Date(cur.year, cur.month, cur.day + 1)
+    cur = { year: next.getFullYear(), month: next.getMonth(), day: next.getDate() }
+  }
+  return result
 }
 
 const DAY_LABELS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
@@ -39,15 +59,9 @@ export default function DatePicker({
 
   const todayStr = formatISO(today.getFullYear(), today.getMonth(), today.getDate())
 
-  const selectedSet = useMemo(() => {
-    const s = new Set<string>()
-    for (var i = 0; i < selectedDates.length; i++) {
-      s.add(selectedDates[i])
-    }
-    return s
-  }, [selectedDates])
+  const selectedSet = useMemo(() => new Set(selectedDates), [selectedDates])
 
-  // Build the 6-row calendar grid for the current view month
+  // Build the calendar grid for the current view month
   const calendarDays = useMemo(() => {
     const firstDay = new Date(viewYear, viewMonth, 1).getDay()
     const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate()
@@ -56,25 +70,24 @@ export default function DatePicker({
     // Leading days from previous month
     if (firstDay > 0) {
       const prevMonthDays = new Date(viewYear, viewMonth, 0).getDate()
-      for (var d = firstDay - 1; d >= 0; d--) {
+      const m = viewMonth === 0 ? 11 : viewMonth - 1
+      const y = viewMonth === 0 ? viewYear - 1 : viewYear
+      for (let d = firstDay - 1; d >= 0; d--) {
         const dayNum = prevMonthDays - d
-        const m = viewMonth === 0 ? 11 : viewMonth - 1
-        const y = viewMonth === 0 ? viewYear - 1 : viewYear
         cells.push({ key: formatISO(y, m, dayNum), day: dayNum, month: m, year: y, isCurrentMonth: false })
       }
     }
 
     // Current month days
-    for (var d2 = 1; d2 <= daysInMonth; d2++) {
-      cells.push({ key: formatISO(viewYear, viewMonth, d2), day: d2, month: viewMonth, year: viewYear, isCurrentMonth: true })
+    for (let d = 1; d <= daysInMonth; d++) {
+      cells.push({ key: formatISO(viewYear, viewMonth, d), day: d, month: viewMonth, year: viewYear, isCurrentMonth: true })
     }
 
     // Trailing days to finish the last week only (no full extra rows)
-    var remainder = cells.length % 7
-    if (remainder > 0) {
-      var trailDay = 1
-      var nm = viewMonth === 11 ? 0 : viewMonth + 1
-      var ny = viewMonth === 11 ? viewYear + 1 : viewYear
+    if (cells.length % 7 > 0) {
+      const nm = viewMonth === 11 ? 0 : viewMonth + 1
+      const ny = viewMonth === 11 ? viewYear + 1 : viewYear
+      let trailDay = 1
       while (cells.length % 7 !== 0) {
         cells.push({ key: formatISO(ny, nm, trailDay), day: trailDay, month: nm, year: ny, isCurrentMonth: false })
         trailDay++
@@ -107,63 +120,35 @@ export default function DatePicker({
     }
   }
 
-  // Compute range preview dates
   const rangePreview = useMemo(() => {
     if (!rangeMode || !rangeStart || !hoverDate) return new Set<string>()
-    var a = rangeStart
-    var b = hoverDate
-    if (a > b) { var tmp = a; a = b; b = tmp }
-
-    var preview = new Set<string>()
-    var cur = parseDateStr(a)
-    var end = b
-    while (true) {
-      var s = formatISO(cur.year, cur.month, cur.day)
-      preview.add(s)
-      if (s === end) break
-      var next = new Date(cur.year, cur.month, cur.day + 1)
-      cur = { year: next.getFullYear(), month: next.getMonth(), day: next.getDate() }
-    }
-    return preview
+    return new Set(listDatesBetween(rangeStart, hoverDate))
   }, [rangeMode, rangeStart, hoverDate])
 
-  const toggleDate = useCallback(
-    (dateStr: string) => {
-      if (selectedSet.has(dateStr)) {
-        onChange(selectedDates.filter(function (d) { return d !== dateStr }))
-      } else {
-        if (selectedDates.length >= maxDates) return
-        var next = selectedDates.concat([dateStr])
-        next.sort()
-        onChange(next)
-      }
+  // Add candidate dates that aren't already selected, capped at maxDates
+  const addDates = useCallback(
+    (candidates: string[]) => {
+      const toAdd = candidates.filter((s) => !selectedSet.has(s))
+      const remaining = maxDates - selectedDates.length
+      const adding = toAdd.slice(0, remaining)
+      if (adding.length === 0) return
+      const next = selectedDates.concat(adding)
+      next.sort()
+      onChange(next)
     },
     [selectedDates, selectedSet, maxDates, onChange]
   )
 
-  function addDatesRange(start: string, end: string) {
-    var a = start
-    var b = end
-    if (a > b) { var tmp = a; a = b; b = tmp }
-
-    var toAdd: string[] = []
-    var cur = parseDateStr(a)
-    var endStr = b
-    while (true) {
-      var s = formatISO(cur.year, cur.month, cur.day)
-      if (!selectedSet.has(s)) toAdd.push(s)
-      if (s === endStr) break
-      var next = new Date(cur.year, cur.month, cur.day + 1)
-      cur = { year: next.getFullYear(), month: next.getMonth(), day: next.getDate() }
-    }
-
-    var remaining = maxDates - selectedDates.length
-    var adding = toAdd.slice(0, remaining)
-    if (adding.length === 0) return
-    var next2 = selectedDates.concat(adding)
-    next2.sort()
-    onChange(next2)
-  }
+  const toggleDate = useCallback(
+    (dateStr: string) => {
+      if (selectedSet.has(dateStr)) {
+        onChange(selectedDates.filter((d) => d !== dateStr))
+      } else {
+        addDates([dateStr])
+      }
+    },
+    [selectedDates, selectedSet, onChange, addDates]
+  )
 
   function handleDayClick(dateStr: string, cellMonth: number, cellYear: number) {
     // Navigate to the clicked month if out-of-month
@@ -176,7 +161,7 @@ export default function DatePicker({
       if (!rangeStart) {
         setRangeStart(dateStr)
       } else {
-        addDatesRange(rangeStart, dateStr)
+        addDates(listDatesBetween(rangeStart, dateStr))
         setRangeStart(null)
         setRangeMode(false)
         setHoverDate(null)
@@ -186,79 +171,34 @@ export default function DatePicker({
     }
   }
 
-  // Shortcuts
-  function addWeekdays() {
-    var daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate()
-    var toAdd: string[] = []
-    for (var d = 1; d <= daysInMonth; d++) {
-      var dow = new Date(viewYear, viewMonth, d).getDay()
-      if (dow >= 1 && dow <= 5) {
-        var s = formatISO(viewYear, viewMonth, d)
-        if (!selectedSet.has(s)) toAdd.push(s)
+  // Shortcut: add all days of the visible month matching a predicate
+  function addMonthDays(match: (dayOfWeek: number) => boolean) {
+    const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate()
+    const candidates: string[] = []
+    for (let d = 1; d <= daysInMonth; d++) {
+      if (match(new Date(viewYear, viewMonth, d).getDay())) {
+        candidates.push(formatISO(viewYear, viewMonth, d))
       }
     }
-    var remaining = maxDates - selectedDates.length
-    var adding = toAdd.slice(0, remaining)
-    if (adding.length === 0) return
-    var next = selectedDates.concat(adding)
-    next.sort()
-    onChange(next)
+    addDates(candidates)
   }
 
-  function addWeekends() {
-    var daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate()
-    var toAdd: string[] = []
-    for (var d = 1; d <= daysInMonth; d++) {
-      var dow = new Date(viewYear, viewMonth, d).getDay()
-      if (dow === 0 || dow === 6) {
-        var s = formatISO(viewYear, viewMonth, d)
-        if (!selectedSet.has(s)) toAdd.push(s)
-      }
-    }
-    var remaining = maxDates - selectedDates.length
-    var adding = toAdd.slice(0, remaining)
-    if (adding.length === 0) return
-    var next = selectedDates.concat(adding)
-    next.sort()
-    onChange(next)
-  }
+  const atMax = selectedDates.length >= maxDates
 
-  function addAll() {
-    var daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate()
-    var toAdd: string[] = []
-    for (var d = 1; d <= daysInMonth; d++) {
-      var s = formatISO(viewYear, viewMonth, d)
-      if (!selectedSet.has(s)) toAdd.push(s)
-    }
-    var remaining = maxDates - selectedDates.length
-    var adding = toAdd.slice(0, remaining)
-    if (adding.length === 0) return
-    var next = selectedDates.concat(adding)
-    next.sort()
-    onChange(next)
-  }
-
-  function clearAll() {
-    onChange([])
-  }
-
-  var isPast = function (dateStr: string): boolean {
-    return dateStr < todayStr
-  }
-
-  var atMax = selectedDates.length >= maxDates
+  const shortcutClass =
+    'rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-xs font-semibold text-stone-600 transition-colors hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-40'
 
   return (
     <div className="space-y-4">
       {/* Count indicator */}
       <div className="flex items-center justify-between">
-        <p className="text-sm text-slate-500">
-          <span className="font-bold text-teal-600">{selectedDates.length}</span>
-          {' / '}
+        <p className="text-sm text-stone-500">
+          <span className="font-semibold text-ink">{selectedDates.length}</span>
+          {' of '}
           {maxDates} dates selected
         </p>
         {atMax && (
-          <span className="text-xs font-semibold text-amber-600 bg-amber-50 px-2.5 py-0.5 rounded-full ring-1 ring-amber-200/60">
+          <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
             Maximum reached
           </span>
         )}
@@ -266,31 +206,16 @@ export default function DatePicker({
 
       {/* Shortcuts */}
       <div className="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          onClick={addWeekdays}
-          disabled={atMax}
-          className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 bg-white/80 text-slate-600 hover:bg-slate-50 hover:border-slate-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-        >
+        <button type="button" onClick={() => addMonthDays((dow) => dow >= 1 && dow <= 5)} disabled={atMax} className={shortcutClass}>
           Weekdays
         </button>
-        <button
-          type="button"
-          onClick={addWeekends}
-          disabled={atMax}
-          className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 bg-white/80 text-slate-600 hover:bg-slate-50 hover:border-slate-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-        >
+        <button type="button" onClick={() => addMonthDays((dow) => dow === 0 || dow === 6)} disabled={atMax} className={shortcutClass}>
           Weekends
         </button>
-        <button
-          type="button"
-          onClick={addAll}
-          disabled={atMax}
-          className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 bg-white/80 text-slate-600 hover:bg-slate-50 hover:border-slate-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-        >
+        <button type="button" onClick={() => addMonthDays(() => true)} disabled={atMax} className={shortcutClass}>
           All
         </button>
-        <div className="w-px h-5 bg-slate-200" />
+        <div className="h-5 w-px bg-stone-200" />
         <button
           type="button"
           onClick={() => {
@@ -299,97 +224,93 @@ export default function DatePicker({
             setHoverDate(null)
           }}
           className={
-            'px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ' +
+            'rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ' +
             (rangeMode
-              ? 'border-violet-300 bg-violet-100 text-violet-700 shadow-sm'
-              : 'border-violet-200 bg-violet-50/80 text-violet-600 hover:bg-violet-100')
+              ? 'border-pine-600 bg-pine-50 text-pine-700'
+              : 'border-stone-300 bg-white text-stone-600 hover:bg-stone-50')
           }
         >
-          {rangeMode ? (rangeStart ? 'Click end date' : 'Click start date') : 'Select Range'}
+          {rangeMode ? (rangeStart ? 'Click end date' : 'Click start date') : 'Select range'}
         </button>
       </div>
 
       {/* Calendar */}
-      <div className="border border-slate-200/60 rounded-2xl overflow-hidden bg-white/80 backdrop-blur-sm shadow-warm">
+      <div className="card overflow-hidden">
         {/* Month navigation */}
-        <div className="flex items-center justify-between px-4 py-3 bg-slate-50/80 border-b border-slate-200/60">
+        <div className="flex items-center justify-between border-b border-stone-200 bg-stone-50 px-4 py-3">
           <button
             type="button"
             onClick={prevMonth}
-            className="p-1.5 rounded-lg hover:bg-white text-slate-500 hover:text-slate-700 transition-all"
+            className="rounded-lg p-1.5 text-stone-500 transition-colors hover:bg-white hover:text-ink"
             aria-label="Previous month"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <h3 className="text-sm font-bold text-slate-700">{monthLabel}</h3>
+          <h3 className="text-sm font-semibold text-ink">{monthLabel}</h3>
           <button
             type="button"
             onClick={nextMonth}
-            className="p-1.5 rounded-lg hover:bg-white text-slate-500 hover:text-slate-700 transition-all"
+            className="rounded-lg p-1.5 text-stone-500 transition-colors hover:bg-white hover:text-ink"
             aria-label="Next month"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </button>
         </div>
 
         {/* Day headers */}
-        <div className="grid grid-cols-7 border-b border-slate-100/60">
-          {DAY_LABELS.map(function (label) {
-            return (
-              <div key={label} className="py-2 text-center text-xs font-semibold text-slate-400">
-                {label}
-              </div>
-            )
-          })}
+        <div className="grid grid-cols-7 border-b border-stone-100">
+          {DAY_LABELS.map((label) => (
+            <div key={label} className="py-2 text-center text-xs font-semibold text-stone-400">
+              {label}
+            </div>
+          ))}
         </div>
 
         {/* Day cells */}
         <div className="grid grid-cols-7">
-          {calendarDays.map(function (cell) {
-            var isSelected = selectedSet.has(cell.key)
-            var isToday = cell.key === todayStr
-            var isOtherMonth = !cell.isCurrentMonth
-            var dateIsPast = isPast(cell.key)
-            var inRangePreview = rangePreview.has(cell.key)
-            var isRangeStart = rangeMode && rangeStart === cell.key
+          {calendarDays.map((cell) => {
+            const isSelected = selectedSet.has(cell.key)
+            const isToday = cell.key === todayStr
+            const isOtherMonth = !cell.isCurrentMonth
+            const isPast = cell.key < todayStr
+            const inRangePreview = rangePreview.has(cell.key)
+            const isRangeStart = rangeMode && rangeStart === cell.key
 
-            var base = 'relative flex items-center justify-center aspect-square text-sm font-medium transition-all duration-150 cursor-pointer select-none min-h-[44px]'
-            var colorClasses: string
-
+            let colorClasses: string
             if (isSelected) {
-              colorClasses = 'bg-teal-500 text-white hover:bg-teal-600 shadow-sm'
+              colorClasses = 'bg-pine-600 text-white hover:bg-pine-700'
             } else if (isRangeStart) {
-              colorClasses = 'bg-violet-500 text-white shadow-sm'
+              colorClasses = 'bg-pine-500 text-white'
             } else if (inRangePreview) {
-              colorClasses = 'bg-violet-100 text-violet-700'
+              colorClasses = 'bg-pine-100 text-pine-800'
             } else if (isOtherMonth) {
-              colorClasses = 'text-slate-300 hover:bg-slate-50'
-            } else if (dateIsPast) {
-              colorClasses = 'text-slate-400 hover:bg-slate-100'
+              colorClasses = 'text-stone-300 hover:bg-stone-50'
+            } else if (isPast) {
+              colorClasses = 'text-stone-400 hover:bg-stone-100'
             } else {
-              colorClasses = 'text-slate-700 hover:bg-teal-50'
+              colorClasses = 'text-ink hover:bg-pine-50'
             }
 
             if (atMax && !isSelected) {
-              colorClasses = isOtherMonth ? 'text-slate-200 cursor-not-allowed' : (dateIsPast ? 'text-slate-300 cursor-not-allowed' : 'text-slate-400 cursor-not-allowed')
+              colorClasses = isOtherMonth || isPast ? 'text-stone-200 cursor-not-allowed' : 'text-stone-400 cursor-not-allowed'
             }
 
-            var ringClass = isToday && !isSelected ? ' ring-2 ring-teal-400 ring-inset rounded-lg' : ''
+            const ringClass = isToday && !isSelected ? ' rounded-lg ring-2 ring-inset ring-pine-500' : ''
 
             return (
               <button
                 key={cell.key}
                 type="button"
-                onClick={function () { handleDayClick(cell.key, cell.month, cell.year) }}
-                onMouseEnter={function () {
+                onClick={() => handleDayClick(cell.key, cell.month, cell.year)}
+                onMouseEnter={() => {
                   if (rangeMode && rangeStart) setHoverDate(cell.key)
                 }}
                 disabled={atMax && !isSelected && !rangeMode}
-                className={base + ' ' + colorClasses + ringClass}
+                className={`relative flex aspect-square min-h-[44px] cursor-pointer select-none items-center justify-center text-sm font-medium transition-colors duration-150 ${colorClasses}${ringClass}`}
                 aria-label={cell.key + (isSelected ? ' (selected)' : '')}
                 aria-pressed={isSelected}
               >
@@ -402,34 +323,31 @@ export default function DatePicker({
 
       {/* Selected dates chips */}
       {selectedDates.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {selectedDates.map(function (dateStr) {
-            return (
+        <>
+          <div className="flex flex-wrap gap-1.5">
+            {selectedDates.map((dateStr) => (
               <button
                 key={dateStr}
                 type="button"
-                onClick={function () { toggleDate(dateStr) }}
-                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold bg-teal-50/80 text-teal-700 border border-teal-200/60 rounded-lg hover:bg-teal-100 transition-all"
+                onClick={() => toggleDate(dateStr)}
+                aria-label={`Remove ${formatDisplay(dateStr)}`}
+                className="inline-flex items-center gap-1 rounded-lg border border-pine-200 bg-pine-50 px-2.5 py-1 text-xs font-semibold text-pine-800 transition-colors hover:bg-pine-100"
               >
                 {formatDisplay(dateStr)}
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
-            )
-          })}
-        </div>
-      )}
-
-      {/* Clear dates */}
-      {selectedDates.length > 0 && (
-        <button
-          type="button"
-          onClick={clearAll}
-          className="text-sm font-medium text-rose-500 hover:text-rose-700 transition-colors"
-        >
-          Clear all dates
-        </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => onChange([])}
+            className="text-sm font-medium text-cut-600 transition-colors hover:text-cut-700"
+          >
+            Clear all dates
+          </button>
+        </>
       )}
     </div>
   )

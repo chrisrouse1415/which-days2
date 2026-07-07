@@ -29,30 +29,27 @@ export default function ShareLink({ shareId }: ShareLinkProps) {
         type="text"
         readOnly
         value={shareUrl}
-        className="flex-1 px-4 py-2.5 text-sm bg-white/60 border border-slate-200/60 rounded-xl text-slate-600 focus:outline-none focus:ring-2 focus:ring-teal-400/20 focus:border-teal-400 transition-all"
+        aria-label="Share link"
+        className="field flex-1 !bg-stone-50 text-stone-600"
         onClick={(e) => (e.target as HTMLInputElement).select()}
       />
       <button
         onClick={handleCopy}
         aria-label="Copy share link"
-        className={`shrink-0 px-4 py-2.5 text-sm font-semibold rounded-xl transition-all duration-200 ${
+        className={
           copyState === 'copied'
-            ? 'text-emerald-700 bg-emerald-50 border border-emerald-200'
-            : 'text-white bg-gradient-to-r from-teal-600 to-teal-500 shadow-md shadow-teal-600/20 hover:shadow-lg hover:shadow-teal-600/25 hover:-translate-y-0.5'
-        }`}
+            ? 'btn border border-pine-200 bg-pine-50 text-pine-700'
+            : 'btn-primary'
+        }
       >
-        {copyState === 'copied'
-          ? 'Copied!'
-          : copyState === 'failed'
-            ? 'Failed to copy'
-            : 'Copy'}
+        {copyState === 'copied' ? 'Copied' : copyState === 'failed' ? 'Copy failed' : 'Copy link'}
       </button>
       <a
         href={shareUrl}
         target="_blank"
         rel="noopener noreferrer"
-        aria-label="Open share link"
-        className="shrink-0 px-4 py-2.5 text-sm font-semibold rounded-xl text-teal-700 bg-teal-50 border border-teal-200 hover:bg-teal-100 transition-all duration-200"
+        aria-label="Open share link in a new tab"
+        className="btn-secondary shrink-0"
       >
         Open
       </a>

@@ -19,28 +19,20 @@ interface LiveSummaryProps {
   availabilitySummary: DateSummary[]
 }
 
-export default function LiveSummary({
-  participants,
-  availabilitySummary,
-}: LiveSummaryProps) {
+export default function LiveSummary({ participants, availabilitySummary }: LiveSummaryProps) {
   const doneNames = participants.filter((p) => p.is_done).map((p) => p.display_name)
   const viableDates = availabilitySummary.filter(
     (d) => d.status === 'viable' || d.status === 'reopened'
   )
   const eliminatedDates = availabilitySummary.filter((d) => d.status === 'eliminated')
+
   return (
-    <div className="space-y-4">
-      <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Summary</h3>
+    <div className="space-y-3">
+      <h3 className="section-label">Where things stand</h3>
 
-      <div className="bg-white/80 backdrop-blur-sm border border-white/80 rounded-2xl p-5 space-y-4 shadow-warm">
-        {doneNames.length > 0 && (
-          <p className="text-xs text-emerald-600">
-            Done: {doneNames.join(', ')}
-          </p>
-        )}
-
+      <div className="card space-y-4 p-5">
         {viableDates.length === 0 && eliminatedDates.length > 0 && (
-          <div className="bg-amber-50/80 border border-amber-200/60 rounded-xl p-3" role="alert">
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3" role="alert">
             <p className="text-sm font-medium text-amber-800">
               All dates have been eliminated. The plan owner can reopen dates if needed.
             </p>
@@ -49,14 +41,14 @@ export default function LiveSummary({
 
         {viableDates.length > 0 && (
           <div>
-            <p className="text-xs font-semibold text-emerald-600 mb-2">
-              Viable dates ({viableDates.length})
+            <p className="mb-2 text-xs font-semibold text-pine-700">
+              Still in the running ({viableDates.length})
             </p>
             <div className="flex flex-wrap gap-1.5">
               {viableDates.map((d) => (
                 <span
                   key={d.planDateId}
-                  className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/60"
+                  className="inline-flex items-center rounded-lg border border-pine-200 bg-pine-50 px-2.5 py-1 text-xs font-semibold text-pine-800"
                 >
                   {formatDate(d.date)}
                 </span>
@@ -67,20 +59,26 @@ export default function LiveSummary({
 
         {eliminatedDates.length > 0 && (
           <div>
-            <p className="text-xs font-semibold text-rose-500 mb-2">
-              Eliminated ({eliminatedDates.length})
+            <p className="mb-2 text-xs font-semibold text-stone-500">
+              Crossed out ({eliminatedDates.length})
             </p>
             <div className="flex flex-wrap gap-1.5">
               {eliminatedDates.map((d) => (
                 <span
                   key={d.planDateId}
-                  className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-rose-50 text-rose-400 ring-1 ring-rose-200/40 line-through"
+                  className="struck inline-flex items-center rounded-lg border border-stone-200 bg-stone-50 px-2.5 py-1 text-xs font-medium"
                 >
                   {formatDate(d.date)}
                 </span>
               ))}
             </div>
           </div>
+        )}
+
+        {doneNames.length > 0 && (
+          <p className="border-t border-stone-100 pt-3 text-xs text-stone-500">
+            <span className="font-semibold text-pine-700">Done:</span> {doneNames.join(', ')}
+          </p>
         )}
       </div>
     </div>

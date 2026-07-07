@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import UndoTimer from './UndoTimer'
 import { getDateParts } from '../lib/format-date'
+import { UNDO_WINDOW_MS } from '../lib/constants'
 
 interface AvailabilitySummaryDate {
   planDateId: string
@@ -34,6 +35,35 @@ interface AvailabilityGridProps {
   onDataRefresh: () => void
 }
 
+function DateTile({
+  eliminated,
+  children,
+}: {
+  eliminated: boolean
+  children: React.ReactNode
+}) {
+  return (
+    <div
+      className={`flex flex-col rounded-xl border p-2.5 transition-colors duration-150 ${
+        eliminated ? 'border-stone-200 bg-stone-50' : 'card'
+      }`}
+    >
+      {children}
+    </div>
+  )
+}
+
+function DateHeading({ date, eliminated }: { date: string; eliminated: boolean }) {
+  const { weekday, monthDay } = getDateParts(date)
+  return (
+    <div className="mb-1.5 text-center">
+      <p className={`text-sm font-semibold leading-tight ${eliminated ? 'struck' : 'text-ink'}`}>
+        {weekday}
+      </p>
+      <p className={`text-xs ${eliminated ? 'struck' : 'text-stone-500'}`}>{monthDay}</p>
+    </div>
+  )
+}
 
 export default function AvailabilityGrid({
   participantId,
@@ -69,41 +99,25 @@ export default function AvailabilityGrid({
     [myAvailability, optimisticMy]
   )
 
-  const getDateStatus = useCallback(
-    (date: AvailabilitySummaryDate): string => {
-      if (optimisticDates[date.planDateId]) return optimisticDates[date.planDateId]
-      return date.status
-    },
-    [optimisticDates]
-  )
-
-  const iMarkedUnavailable = useCallback(
-    (planDateId: string): boolean => {
-      return getMyStatus(planDateId) === 'unavailable'
-    },
-    [getMyStatus]
-  )
-
-  const hasActiveUndo = useCallback(
-    (planDateId: string): UndoPending | undefined => {
-      return undoPending.find((u) => u.planDateId === planDateId)
-    },
-    [undoPending]
-  )
-
-  const othersMarkedUnavailable = useCallback(
-    (date: AvailabilitySummaryDate): boolean => {
-      return date.unavailableBy.some((u) => u.participantId !== participantId)
-    },
-    [participantId]
-  )
+  function clearOptimistic(planDateId: string) {
+    setOptimisticDates((prev) => {
+      const next = { ...prev }
+      delete next[planDateId]
+      return next
+    })
+    setOptimisticMy((prev) => {
+      const next = { ...prev }
+      delete next[planDateId]
+      return next
+    })
+  }
 
   async function handleToggle(planDateId: string) {
     if (togglingIds.has(planDateId)) return
     setTogglingIds((prev) => new Set(prev).add(planDateId))
 
-    // Optimistic update — show grey tile + undo timer immediately
-    const optimisticDeadline = Date.now() + 10_000
+    // Optimistic update — show eliminated tile + undo timer immediately
+    const optimisticDeadline = Date.now() + UNDO_WINDOW_MS
     setOptimisticDates((prev) => ({ ...prev, [planDateId]: 'eliminated' }))
     setOptimisticMy((prev) => ({ ...prev, [planDateId]: 'unavailable' }))
     setUndoPending((prev) => [
@@ -120,16 +134,7 @@ export default function AvailabilityGrid({
 
       if (!res.ok) {
         // Revert all optimistic updates
-        setOptimisticDates((prev) => {
-          const next = { ...prev }
-          delete next[planDateId]
-          return next
-        })
-        setOptimisticMy((prev) => {
-          const next = { ...prev }
-          delete next[planDateId]
-          return next
-        })
+        clearOptimistic(planDateId)
         setUndoPending((prev) => prev.filter((u) => u.planDateId !== planDateId))
         const data = await res.json().catch(() => ({}))
         setError(data.error || 'Failed to update. Please try again.')
@@ -141,25 +146,14 @@ export default function AvailabilityGrid({
 
       // Update with real eventLogId (keep optimistic deadline to avoid timer jump)
       setUndoPending((prev) =>
-        prev.map((u) =>
-          u.planDateId === planDateId
-            ? { ...u, eventLogId: data.eventLogId }
-            : u
-        )
+        prev.map((u) => (u.planDateId === planDateId ? { ...u, eventLogId: data.eventLogId } : u))
       )
     } catch {
       // Revert all optimistic updates
-      setOptimisticDates((prev) => {
-        const next = { ...prev }
-        delete next[planDateId]
-        return next
-      })
-      setOptimisticMy((prev) => {
-        const next = { ...prev }
-        delete next[planDateId]
-        return next
-      })
+      clearOptimistic(planDateId)
       setUndoPending((prev) => prev.filter((u) => u.planDateId !== planDateId))
+      setError('Network error. Please try again.')
+      setTimeout(() => setError(null), 3000)
     } finally {
       setTogglingIds((prev) => {
         const next = new Set(prev)
@@ -178,20 +172,8 @@ export default function AvailabilityGrid({
       })
 
       if (res.ok) {
-        // Remove from undo pending
         setUndoPending((prev) => prev.filter((u) => u.planDateId !== planDateId))
-        // Clear optimistic state
-        setOptimisticDates((prev) => {
-          const next = { ...prev }
-          delete next[planDateId]
-          return next
-        })
-        setOptimisticMy((prev) => {
-          const next = { ...prev }
-          delete next[planDateId]
-          return next
-        })
-        // Refresh from server
+        clearOptimistic(planDateId)
         onDataRefresh()
       }
     } catch {
@@ -201,28 +183,16 @@ export default function AvailabilityGrid({
 
   function handleUndoExpired(planDateId: string) {
     setUndoPending((prev) => prev.filter((u) => u.planDateId !== planDateId))
-    // Clear optimistic state and refresh from server
-    setOptimisticDates((prev) => {
-      const next = { ...prev }
-      delete next[planDateId]
-      return next
-    })
-    setOptimisticMy((prev) => {
-      const next = { ...prev }
-      delete next[planDateId]
-      return next
-    })
+    clearOptimistic(planDateId)
     onDataRefresh()
   }
 
   if (planStatus === 'deleted') {
     return (
       <div className="space-y-3">
-        <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-          Your Availability
-        </h3>
-        <div className="rounded-2xl p-5 bg-slate-50/80 border border-slate-200/60" role="alert">
-          <p className="text-sm font-medium text-slate-600">This plan has been deleted.</p>
+        <h3 className="section-label">Your availability</h3>
+        <div className="rounded-xl border border-stone-200 bg-stone-50 p-5" role="alert">
+          <p className="text-sm font-medium text-stone-600">This plan has been deleted.</p>
         </div>
       </div>
     )
@@ -231,47 +201,30 @@ export default function AvailabilityGrid({
   if (planStatus === 'locked') {
     return (
       <div className="space-y-3">
-        <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-          Your Availability
-        </h3>
-        <div className="rounded-2xl p-4 bg-teal-50/80 border border-teal-200/60 mb-3" role="alert">
-          <p className="text-sm font-medium text-teal-800">
-            This plan is locked — no more changes allowed.
+        <h3 className="section-label">Your availability</h3>
+        <div className="rounded-xl border border-pine-200 bg-pine-50 p-4" role="alert">
+          <p className="text-sm font-medium text-pine-800">
+            This plan is locked &mdash; no more changes allowed.
           </p>
         </div>
-        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
+        <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4">
           {availabilitySummary.map((date) => {
-            const myStatus = getMyStatus(date.planDateId)
             const isEliminated = date.status === 'eliminated'
-            const { weekday, monthDay } = getDateParts(date.date)
+            const myStatus = getMyStatus(date.planDateId)
 
             return (
-              <div
-                key={date.planDateId}
-                className={`flex flex-col rounded-2xl border p-2.5 ${
-                  isEliminated
-                    ? 'bg-slate-50/60 border-slate-200/40'
-                    : 'bg-white/80 border-white/80 shadow-warm'
-                }`}
-              >
-                <div className="text-center mb-1.5">
-                  <p className={`text-sm font-bold leading-tight ${isEliminated ? 'text-slate-300 line-through' : 'text-slate-800'}`}>
-                    {weekday}
-                  </p>
-                  <p className={`text-xs ${isEliminated ? 'text-slate-300 line-through' : 'text-slate-400'}`}>
-                    {monthDay}
-                  </p>
-                </div>
+              <DateTile key={date.planDateId} eliminated={isEliminated}>
+                <DateHeading date={date.date} eliminated={isEliminated} />
                 <div className="mt-auto">
                   {myStatus === 'unavailable' ? (
-                    <p className="text-[10px] text-slate-400 text-center py-1">Can&apos;t do this</p>
+                    <p className="py-1 text-center text-[11px] text-stone-400">You can&rsquo;t do this</p>
                   ) : isEliminated ? (
-                    <p className="text-[10px] text-slate-400 text-center py-1">Eliminated</p>
+                    <p className="py-1 text-center text-[11px] text-stone-400">Eliminated</p>
                   ) : (
-                    <p className="text-[10px] text-emerald-500 text-center py-1">Available</p>
+                    <p className="py-1 text-center text-[11px] font-medium text-pine-600">Available</p>
                   )}
                 </div>
-              </div>
+              </DateTile>
             )
           })}
         </div>
@@ -281,59 +234,38 @@ export default function AvailabilityGrid({
 
   return (
     <div className="space-y-3">
-      <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-        Your Availability
-      </h3>
+      <h3 className="section-label">Your availability</h3>
 
       {error && (
-        <p className="text-xs text-rose-600 bg-rose-50/80 border border-rose-200/60 rounded-xl px-3 py-2" role="alert">{error}</p>
+        <p className="rounded-lg border border-cut-200 bg-cut-50 px-3 py-2 text-xs text-cut-700" role="alert">
+          {error}
+        </p>
       )}
 
-      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
+      <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4">
         {availabilitySummary.map((date) => {
-          const dateStatus = getDateStatus(date)
+          const dateStatus: string = optimisticDates[date.planDateId] ?? date.status
           const myStatus = getMyStatus(date.planDateId)
-          const undoEntry = hasActiveUndo(date.planDateId)
+          const undoEntry = undoPending.find((u) => u.planDateId === date.planDateId)
           const isLocked = dateStatus === 'locked'
           const isEliminated = dateStatus === 'eliminated'
-          const eliminatedByOthers = isEliminated && othersMarkedUnavailable(date) && !iMarkedUnavailable(date.planDateId)
-          const { weekday, monthDay } = getDateParts(date.date)
+          const othersWhoCant = date.unavailableBy.filter((u) => u.participantId !== participantId)
+          const eliminatedByOthers =
+            isEliminated && othersWhoCant.length > 0 && myStatus !== 'unavailable'
 
           return (
-            <div
-              key={date.planDateId}
-              className={`flex flex-col rounded-2xl border p-2.5 transition-all duration-200 ${
-                isEliminated
-                  ? 'bg-slate-50/60 border-slate-200/40'
-                  : 'bg-white/80 backdrop-blur-sm border-white/80 shadow-warm hover:shadow-warm-lg'
-              }`}
-            >
-              <div className="text-center mb-1.5">
-                <p
-                  className={`text-sm font-bold leading-tight ${
-                    isEliminated ? 'text-slate-300 line-through' : 'text-slate-800'
-                  }`}
-                >
-                  {weekday}
-                </p>
-                <p
-                  className={`text-xs ${
-                    isEliminated ? 'text-slate-300 line-through' : 'text-slate-400'
-                  }`}
-                >
-                  {monthDay}
-                </p>
-              </div>
+            <DateTile key={date.planDateId} eliminated={isEliminated}>
+              <DateHeading date={date.date} eliminated={isEliminated} />
 
-              {date.unavailableBy.filter((u) => u.participantId !== participantId).length > 0 && (
-                <p className="text-[10px] text-slate-400 text-center mb-1.5 truncate">
-                  {date.unavailableBy.filter((u) => u.participantId !== participantId).map((u) => u.displayName).join(', ')} can&apos;t
+              {othersWhoCant.length > 0 && (
+                <p className="mb-1.5 truncate text-center text-[11px] text-stone-400">
+                  {othersWhoCant.map((u) => u.displayName).join(', ')} can&rsquo;t
                 </p>
               )}
 
               <div className="mt-auto">
                 {isLocked ? (
-                  <p className="text-[10px] text-slate-400 text-center py-1">Locked</p>
+                  <p className="py-1 text-center text-[11px] text-stone-400">Locked</p>
                 ) : undoEntry ? (
                   <UndoTimer
                     deadline={undoEntry.deadline}
@@ -342,22 +274,22 @@ export default function AvailabilityGrid({
                     onUndo={() => handleUndo(date.planDateId, undoEntry.eventLogId)}
                   />
                 ) : myStatus === 'unavailable' ? (
-                  <p className="text-[10px] text-slate-400 text-center py-1">Can&apos;t do this</p>
+                  <p className="py-1 text-center text-[11px] text-stone-400">You can&rsquo;t do this</p>
                 ) : eliminatedByOthers ? (
-                  <p className="text-[10px] text-slate-400 text-center py-1">Eliminated</p>
+                  <p className="py-1 text-center text-[11px] text-stone-400">Eliminated</p>
                 ) : isDone ? (
-                  <p className="text-[10px] text-emerald-500 text-center py-1">Available</p>
+                  <p className="py-1 text-center text-[11px] font-medium text-pine-600">Available</p>
                 ) : (
                   <button
                     onClick={() => handleToggle(date.planDateId)}
                     disabled={togglingIds.has(date.planDateId)}
-                    className="w-full px-2 py-1.5 min-h-[36px] text-xs font-semibold text-rose-500 bg-rose-50/80 border border-rose-200/60 rounded-xl hover:bg-rose-100 hover:border-rose-300/60 disabled:opacity-50 transition-all duration-200"
+                    className="min-h-[36px] w-full rounded-lg border border-cut-200 bg-white px-2 py-1.5 text-xs font-semibold text-cut-600 transition-colors duration-150 hover:bg-cut-50 disabled:opacity-50"
                   >
-                    Can&apos;t do this
+                    Can&rsquo;t do this
                   </button>
                 )}
               </div>
-            </div>
+            </DateTile>
           )
         })}
       </div>

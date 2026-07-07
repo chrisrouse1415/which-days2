@@ -1,12 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
-import {
-  joinPlan,
-  PlanNotFoundError,
-  PlanNotActiveError,
-  DuplicateNameError,
-  ValidationError,
-} from '../../../lib/participants'
-import { logger } from '../../../lib/logger'
+import { joinPlan } from '../../../lib/participants'
+import { sendApiError } from '../../../lib/api-errors'
 import { checkRateLimit } from '../../../lib/rate-limit'
 import { isValidShareId, isNonEmptyString } from '../../../lib/validation'
 
@@ -28,20 +22,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     return res.status(201).json(participant)
   } catch (error) {
-    if (error instanceof ValidationError) {
-      return res.status(400).json({ error: error.message })
-    }
-    if (error instanceof PlanNotFoundError) {
-      return res.status(404).json({ error: error.message })
-    }
-    if (error instanceof DuplicateNameError) {
-      return res.status(409).json({ error: error.message })
-    }
-    if (error instanceof PlanNotActiveError) {
-      return res.status(410).json({ error: error.message })
-    }
-
-    logger.error('Unexpected error joining plan', { route: 'participants/join', shareId: req.body?.shareId }, error)
-    return res.status(500).json({ error: 'Internal server error' })
+    return sendApiError(res, error, { route: 'participants/join', shareId: req.body?.shareId })
   }
 }

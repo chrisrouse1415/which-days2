@@ -5,11 +5,8 @@ import {
   updatePlanStatus,
   editPlan,
   resetPlan,
-  PlanNotFoundError,
-  NotOwnerError,
-  ValidationError,
 } from '../../../lib/plans'
-import { logger } from '../../../lib/logger'
+import { sendApiError } from '../../../lib/api-errors'
 import { isValidUUID } from '../../../lib/validation'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -36,8 +33,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       if (reset === true) {
-        await resetPlan(planId, userId)
-        const result = await getPlanWithMatrix(planId, userId)
+        const result = await resetPlan(planId, userId)
         return res.status(200).json(result)
       }
 
@@ -59,17 +55,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     return res.status(405).json({ error: 'Method not allowed' })
   } catch (error) {
-    if (error instanceof Error && error.message === 'Authentication required') {
-      return res.status(401).json({ error: 'Authentication required' })
-    }
-    if (error instanceof PlanNotFoundError || error instanceof NotOwnerError) {
-      return res.status(404).json({ error: 'Plan not found' })
-    }
-    if (error instanceof ValidationError) {
-      return res.status(400).json({ error: error.message })
-    }
-
-    logger.error('Unexpected error in plan management', { route: 'plans/manage', planId: req.query.planId as string }, error)
-    return res.status(500).json({ error: 'Internal server error' })
+    return sendApiError(res, error, { route: 'plans/manage', planId: req.query.planId as string })
   }
 }

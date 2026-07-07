@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
-import Link from 'next/link'
 import useSWR from 'swr'
 import type { GetServerSideProps } from 'next'
 import { supabaseAdmin } from '../../lib/supabase-admin'
@@ -10,6 +9,7 @@ import AvailabilityGrid from '../../components/AvailabilityGrid'
 import DoneButton from '../../components/DoneButton'
 import LiveSummary from '../../components/LiveSummary'
 import NeedsReviewBanner from '../../components/NeedsReviewBanner'
+import Layout from '../../components/Layout'
 
 interface PlanData {
   plan: {
@@ -18,12 +18,6 @@ interface PlanData {
     status: string
   }
   ownerName: string | null
-  dates: Array<{
-    id: string
-    plan_id: string
-    date: string
-    status: 'viable' | 'eliminated' | 'locked' | 'reopened'
-  }>
   participants: Array<{
     id: string
     display_name: string
@@ -59,7 +53,9 @@ interface PlanShareProps {
 
 export const getServerSideProps: GetServerSideProps<PlanShareProps> = async (ctx) => {
   const shareId = ctx.params?.shareId as string
-  const proto = ctx.req.headers['x-forwarded-proto'] || 'https'
+  // Only trust the forwarded proto if it's a known scheme
+  const forwardedProto = ctx.req.headers['x-forwarded-proto']
+  const proto = forwardedProto === 'http' ? 'http' : 'https'
   const host = `${proto}://${ctx.req.headers.host}`
 
   const { data: plan } = await supabaseAdmin
@@ -87,9 +83,7 @@ export const getServerSideProps: GetServerSideProps<PlanShareProps> = async (ctx
     .single()
 
   const ownerName = owner?.first_name
-  const title = ownerName
-    ? `Join ${ownerName}'s plan: ${plan.title}`
-    : plan.title
+  const title = ownerName ? `Join ${ownerName}'s plan: ${plan.title}` : plan.title
   const description = 'When are you free?'
 
   return { props: { og: { title, description, image: `${host}/og-image.jpg` } } }
@@ -99,42 +93,35 @@ function getStorageKey(shareId: string) {
   return `whichdays_participant_${shareId}`
 }
 
-const fetcher = (url: string) => fetch(url).then((res) => {
-  if (res.status === 404) throw new Error('not_found')
-  if (!res.ok) throw new Error('Failed to load plan')
-  return res.json()
-})
+const fetcher = (url: string) =>
+  fetch(url).then((res) => {
+    if (res.status === 404) throw new Error('not_found')
+    if (!res.ok) throw new Error('Failed to load plan')
+    return res.json()
+  })
 
 function PlanSkeleton() {
   return (
     <div className="space-y-6">
-      {/* Title */}
-      <div className="h-7 w-48 bg-slate-200 rounded-lg animate-pulse" />
+      <div className="h-7 w-48 animate-pulse rounded-lg bg-stone-200" />
 
-      {/* Date cards */}
-      <div className="space-y-2">
-        {[1, 2, 3, 4, 5].map((i) => (
-          <div
-            key={i}
-            className="bg-white/80 backdrop-blur-sm border border-white/80 rounded-xl p-4 shadow-warm"
-          >
-            <div className="flex items-center justify-between">
-              <div className="h-5 w-32 bg-slate-200 rounded-lg animate-pulse" />
-              <div className="h-8 w-20 bg-slate-100 rounded-lg animate-pulse" />
-            </div>
+      <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="card p-2.5">
+            <div className="mx-auto h-5 w-12 animate-pulse rounded bg-stone-200" />
+            <div className="mx-auto mt-1.5 h-3 w-14 animate-pulse rounded bg-stone-100" />
+            <div className="mt-3 h-8 w-full animate-pulse rounded-lg bg-stone-100" />
           </div>
         ))}
       </div>
 
-      {/* Done button */}
-      <div className="h-11 w-full bg-slate-100 rounded-xl animate-pulse" />
+      <div className="h-11 w-full animate-pulse rounded-lg bg-stone-100" />
 
-      {/* Summary */}
-      <div className="bg-white/80 rounded-2xl p-5">
-        <div className="h-5 w-36 bg-slate-200 rounded-lg animate-pulse mb-3" />
+      <div className="card p-5">
+        <div className="mb-3 h-5 w-36 animate-pulse rounded-lg bg-stone-200" />
         <div className="space-y-2">
-          <div className="h-4 w-48 bg-slate-100 rounded-lg animate-pulse" />
-          <div className="h-4 w-40 bg-slate-100 rounded-lg animate-pulse" />
+          <div className="h-4 w-48 animate-pulse rounded-lg bg-stone-100" />
+          <div className="h-4 w-40 animate-pulse rounded-lg bg-stone-100" />
         </div>
       </div>
     </div>
@@ -145,17 +132,22 @@ export default function PlanShare({ og }: PlanShareProps) {
   const router = useRouter()
   const shareId = router.query.shareId as string | undefined
 
-  const [participantId, setParticipantId] = useState<string | null>(() => {
-    if (typeof window === 'undefined' || !shareId) return null
-    return localStorage.getItem(getStorageKey(shareId))
-  })
+  // undefined = localStorage not checked yet, null = checked and not joined
+  const [participantId, setParticipantId] = useState<string | null | undefined>(undefined)
   const [isDone, setIsDone] = useState(false)
   const [needsReview, setNeedsReview] = useState(false)
 
-  // Build SWR key — includes participantId when available
-  const swrKey = shareId
-    ? `/api/participants/plan?shareId=${shareId}${participantId ? `&participantId=${participantId}` : ''}`
-    : null
+  // Resolve stored participant session once the router provides shareId,
+  // before the first fetch — avoids a duplicate request on load
+  useEffect(() => {
+    if (!shareId) return
+    setParticipantId(localStorage.getItem(getStorageKey(shareId)))
+  }, [shareId])
+
+  const swrKey =
+    shareId && participantId !== undefined
+      ? `/api/participants/plan?shareId=${shareId}${participantId ? `&participantId=${participantId}` : ''}`
+      : null
 
   const { data: planData, error, isLoading, mutate } = useSWR<PlanData>(swrKey, fetcher, {
     refreshInterval: 30000, // Poll every 30s for other participants' changes
@@ -174,37 +166,25 @@ export default function PlanShare({ og }: PlanShareProps) {
     },
   })
 
-  // Initialize participantId from localStorage once shareId becomes available (router hydration)
-  useEffect(() => {
-    if (shareId && participantId === null) {
-      const storedId = localStorage.getItem(getStorageKey(shareId))
-      if (storedId) {
-        setParticipantId(storedId)
-      }
-    }
-  }, [shareId, participantId])
-
   function handleJoined(newParticipantId: string) {
     if (!shareId) return
     localStorage.setItem(getStorageKey(shareId), newParticipantId)
     setParticipantId(newParticipantId)
-    // SWR key will change automatically, triggering a new fetch
+    // SWR key changes automatically, triggering a new fetch
   }
 
   function handleDataRefresh() {
     mutate()
   }
 
-  // Determine phase
   const isNotFound = error?.message === 'not_found'
   const hasError = error && !isNotFound
-  const phase = isLoading
-    ? 'loading'
-    : planData && participantId && planData.participants.find((p) => p.id === participantId)
-    ? 'availability'
-    : planData
-    ? 'join'
-    : 'loading'
+  const phase =
+    isLoading || !planData
+      ? 'loading'
+      : participantId && planData.participants.some((p) => p.id === participantId)
+        ? 'availability'
+        : 'join'
 
   const myName = planData?.participants.find((p) => p.id === participantId)?.display_name
 
@@ -223,35 +203,32 @@ export default function PlanShare({ og }: PlanShareProps) {
         <meta name="twitter:description" content={og.description} />
         <meta name="twitter:image" content={og.image} />
       </Head>
-      <div className="min-h-screen bg-warm-gradient bg-question-pattern bg-grain">
-      <header className="glass-header border-b border-teal-100/50 sticky top-0 z-30">
-        <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between gap-4 min-w-0">
-          <Link href="/" className="text-xl font-display font-semibold text-teal-900 hover:text-teal-700 transition-colors tracking-tight">
-            Which Days?
-          </Link>
-          {myName && (
-            <span className="text-sm text-slate-400">
-              Joined as <span className="font-semibold text-slate-600">{myName}</span>
+      <Layout
+        headerRight={
+          myName ? (
+            <span className="text-sm text-stone-500">
+              Joined as <span className="font-semibold text-ink">{myName}</span>
             </span>
-          )}
-        </div>
-      </header>
-
-      <main id="main-content" className="max-w-3xl mx-auto px-4 py-8">
+          ) : undefined
+        }
+      >
         {isNotFound ? (
-          <div className="text-center py-16">
-            <p className="text-rose-600">Plan not found</p>
+          <div className="py-16 text-center">
+            <p className="font-medium text-ink">This plan doesn&rsquo;t exist.</p>
+            <p className="mt-1 text-sm text-stone-500">
+              Check the link you were sent &mdash; it may have been deleted.
+            </p>
           </div>
         ) : hasError ? (
-          <div className="text-center py-16">
-            <p className="text-rose-600">Failed to load plan. Please try again.</p>
+          <div className="py-16 text-center">
+            <p className="text-cut-600">Failed to load plan. Please try again.</p>
           </div>
         ) : phase === 'loading' ? (
           <PlanSkeleton />
         ) : phase === 'join' && planData ? (
           planData.plan.status !== 'active' ? (
-            <div className="text-center py-16">
-              <p className="text-slate-600 text-sm">
+            <div className="py-16 text-center">
+              <p className="text-sm text-stone-600">
                 {planData.plan.status === 'locked'
                   ? 'This plan is locked and no longer accepting participants.'
                   : 'This plan is no longer available.'}
@@ -270,7 +247,12 @@ export default function PlanShare({ og }: PlanShareProps) {
         ) : phase === 'availability' && planData && participantId ? (
           <div className="space-y-6">
             <div>
-              <h1 className="font-display text-2xl font-bold text-slate-900 tracking-tight">{planData.plan.title}</h1>
+              <h1 className="font-display text-2xl font-semibold tracking-tight text-ink">
+                {planData.plan.title}
+              </h1>
+              {planData.ownerName && (
+                <p className="mt-1 text-sm text-stone-500">Organized by {planData.ownerName}</p>
+              )}
             </div>
 
             {needsReview && (
@@ -308,8 +290,7 @@ export default function PlanShare({ og }: PlanShareProps) {
             />
           </div>
         ) : null}
-      </main>
-    </div>
+      </Layout>
     </>
   )
 }

@@ -1,90 +1,24 @@
 import { supabaseAdmin } from './supabase-admin'
 import { logger } from './logger'
-
-export class PlanNotFoundError extends Error {
-  constructor(message = 'Plan not found') {
-    super(message)
-    this.name = 'PlanNotFoundError'
-  }
-}
-
-export class PlanNotActiveError extends Error {
-  constructor(message = 'Plan is no longer active') {
-    super(message)
-    this.name = 'PlanNotActiveError'
-  }
-}
-
-export class DuplicateNameError extends Error {
-  constructor(message = 'That name is already taken') {
-    super(message)
-    this.name = 'DuplicateNameError'
-  }
-}
-
-export class ParticipantNotFoundError extends Error {
-  constructor(message = 'Participant not found') {
-    super(message)
-    this.name = 'ParticipantNotFoundError'
-  }
-}
-
-export class ValidationError extends Error {
-  constructor(message: string) {
-    super(message)
-    this.name = 'ValidationError'
-  }
-}
-
-export async function getPlanByShareId(shareId: string) {
-  const { data: plan, error: planError } = await supabaseAdmin
-    .from('plans')
-    .select()
-    .eq('share_id', shareId)
-    .single()
-
-  if (planError || !plan) {
-    throw new PlanNotFoundError()
-  }
-
-  // Fetch dates and participants in parallel
-  const [datesResult, participantsResult] = await Promise.all([
-    supabaseAdmin
-      .from('plan_dates')
-      .select()
-      .eq('plan_id', plan.id)
-      .order('date', { ascending: true }),
-    supabaseAdmin
-      .from('participants')
-      .select()
-      .eq('plan_id', plan.id)
-      .order('created_at', { ascending: true }),
-  ])
-
-  if (datesResult.error) {
-    logger.error('Error fetching plan dates', { shareId, planId: plan.id }, datesResult.error)
-    throw datesResult.error
-  }
-
-  if (participantsResult.error) {
-    logger.error('Error fetching participants', { shareId, planId: plan.id }, participantsResult.error)
-    throw participantsResult.error
-  }
-
-  return { plan, dates: datesResult.data ?? [], participants: participantsResult.data ?? [] }
-}
+import { MAX_NAME_LENGTH, MAX_PARTICIPANTS_PER_PLAN } from './constants'
+import {
+  DuplicateNameError,
+  ParticipantNotFoundError,
+  PlanFullError,
+  PlanNotActiveError,
+  PlanNotFoundError,
+  ValidationError,
+} from './errors'
 
 export async function joinPlan(shareId: string, displayName: string) {
-  // Validate name
   const trimmedName = displayName.trim()
   if (!trimmedName) {
     throw new ValidationError('Display name is required')
   }
-  if (trimmedName.length > 50) {
-    throw new ValidationError('Display name must be 50 characters or fewer')
+  if (trimmedName.length > MAX_NAME_LENGTH) {
+    throw new ValidationError(`Display name must be ${MAX_NAME_LENGTH} characters or fewer`)
   }
 
-  // Fetch plan
   const { data: plan, error: planError } = await supabaseAdmin
     .from('plans')
     .select()
@@ -99,7 +33,21 @@ export async function joinPlan(shareId: string, displayName: string) {
     throw new PlanNotActiveError()
   }
 
-  // Insert participant
+  // Cap participants per plan so a leaked link can't be used to flood a plan
+  const { count, error: countErr } = await supabaseAdmin
+    .from('participants')
+    .select('*', { count: 'exact', head: true })
+    .eq('plan_id', plan.id)
+
+  if (countErr) {
+    logger.error('Error counting participants', { shareId, planId: plan.id }, countErr)
+    throw countErr
+  }
+
+  if ((count ?? 0) >= MAX_PARTICIPANTS_PER_PLAN) {
+    throw new PlanFullError()
+  }
+
   const { data: participant, error: insertError } = await supabaseAdmin
     .from('participants')
     .insert({
@@ -118,7 +66,6 @@ export async function joinPlan(shareId: string, displayName: string) {
     throw insertError
   }
 
-  // Log event
   await supabaseAdmin.from('event_log').insert({
     plan_id: plan.id,
     participant_id: participant.id,
@@ -130,7 +77,6 @@ export async function joinPlan(shareId: string, displayName: string) {
 }
 
 export async function toggleDone(participantId: string) {
-  // Fetch participant
   const { data: participant, error: pErr } = await supabaseAdmin
     .from('participants')
     .select()
@@ -141,7 +87,6 @@ export async function toggleDone(participantId: string) {
     throw new ParticipantNotFoundError()
   }
 
-  // Verify plan is active
   const { data: plan, error: planErr } = await supabaseAdmin
     .from('plans')
     .select('status')
@@ -149,7 +94,7 @@ export async function toggleDone(participantId: string) {
     .single()
 
   if (planErr || !plan) {
-    throw new Error('Plan not found')
+    throw new PlanNotFoundError()
   }
 
   if (plan.status !== 'active') {
@@ -183,7 +128,6 @@ export async function toggleDone(participantId: string) {
     }
   }
 
-  // Log event
   await supabaseAdmin.from('event_log').insert({
     plan_id: participant.plan_id,
     participant_id: participantId,

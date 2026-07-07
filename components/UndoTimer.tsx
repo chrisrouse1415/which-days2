@@ -38,7 +38,7 @@ export default function UndoTimer({ deadline, disabled, onExpired, onUndo }: Und
       onClick={onUndo}
       disabled={disabled}
       aria-label={`Undo, ${secondsLeft} seconds remaining`}
-      className="w-full px-2 py-1.5 min-h-[36px] text-xs font-semibold text-amber-700 bg-amber-50/80 border border-amber-200/60 rounded-xl hover:bg-amber-100 disabled:opacity-50 transition-all"
+      className="min-h-[36px] w-full rounded-lg border border-amber-200 bg-amber-50 px-2 py-1.5 text-xs font-semibold text-amber-700 transition-colors hover:bg-amber-100 disabled:opacity-50"
     >
       Undo ({secondsLeft}s)
     </button>
