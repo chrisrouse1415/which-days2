@@ -33,12 +33,9 @@ export default function Home() {
                   </Link>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  <SignInButton forceRedirectUrl="/create">
-                    <button className="btn-primary !px-6 !py-3">Create a plan</button>
-                  </SignInButton>
-                  <p className="text-sm text-stone-500">Your group doesn&rsquo;t need an account.</p>
-                </div>
+                <SignInButton forceRedirectUrl="/create">
+                  <button className="btn-primary !px-6 !py-3">Create a plan</button>
+                </SignInButton>
               )}
             </div>
           </div>

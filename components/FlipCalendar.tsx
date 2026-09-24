@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 
 /**
- * Landing-page hero: a desk flip calendar that pages through candidate days.
+ * Landing-page hero: a desk flip calendar that pages through candidate days
+ * (about 30% smaller on mobile).
  * Each day gets struck out in red pencil and flipped away, until the one that
  * works for everyone gets circled and lingers.
  */
@@ -32,13 +33,13 @@ function Page({ day, phase, className = '' }: { day: Day; phase: Phase; classNam
 
   return (
     <div className={`flip-page card absolute inset-0 flex flex-col overflow-hidden ${className}`}>
-      <div className="bg-ink py-2 text-center text-[11px] font-semibold uppercase tracking-[0.2em] text-white/90">
+      <div className="bg-ink py-1.5 text-center text-[9px] font-semibold sm:py-2 sm:text-[11px] uppercase tracking-[0.2em] text-white/90">
         June
       </div>
-      <div className="flex flex-1 flex-col items-center justify-center px-4 pb-4 pt-3">
-        <p className="section-label">{day.weekday}</p>
+      <div className="flex flex-1 flex-col items-center justify-center px-3 pb-3 pt-2 sm:px-4 sm:pb-4 sm:pt-3">
+        <p className="section-label !text-[10px] sm:!text-xs">{day.weekday}</p>
         <div className="relative mt-1">
-          <p className="font-display text-7xl font-semibold leading-none tracking-tight text-ink tabular-nums">
+          <p className="font-display text-5xl font-semibold sm:text-7xl leading-none tracking-tight text-ink tabular-nums">
             {day.date}
           </p>
           <svg
@@ -64,7 +65,7 @@ function Page({ day, phase, className = '' }: { day: Day; phase: Phase; classNam
           </svg>
         </div>
         <p
-          className={`mt-4 text-xs font-semibold transition-opacity duration-300 ${
+          className={`mt-2.5 text-[10px] font-semibold transition-opacity sm:mt-4 sm:text-xs duration-300 ${
             day.works ? 'text-pine-600' : 'text-cut-600'
           } ${marked ? 'opacity-100' : 'opacity-0'}`}
         >
@@ -117,9 +118,9 @@ export default function FlipCalendar() {
   const upNext = DAYS[(index + 1) % DAYS.length]
 
   return (
-    <div className="relative w-44 shrink-0 self-center sm:self-auto select-none" aria-hidden="true">
+    <div className="relative w-32 shrink-0 sm:w-44 self-center sm:self-auto select-none" aria-hidden="true">
       {/* Binder rings */}
-      <div className="absolute -top-2 left-0 right-0 z-20 flex justify-center gap-16">
+      <div className="absolute -top-2 left-0 right-0 z-20 flex justify-center gap-11 sm:gap-16">
         <span className="h-5 w-2 rounded-full border-2 border-stone-400 bg-paper" />
         <span className="h-5 w-2 rounded-full border-2 border-stone-400 bg-paper" />
       </div>
@@ -128,7 +129,7 @@ export default function FlipCalendar() {
       <div className="absolute inset-x-2 -bottom-3 h-full rounded-xl border border-stone-200 bg-white" />
       <div className="absolute inset-x-1 -bottom-1.5 h-full rounded-xl border border-stone-200 bg-white" />
 
-      <div className="relative h-56 [perspective:700px]">
+      <div className="relative h-40 [perspective:700px] sm:h-56">
         <Page day={upNext} phase="idle" />
         <Page
           key={index}
