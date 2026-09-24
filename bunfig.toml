@@ -1,0 +1,4 @@
+[test]
+# Points the app's Supabase client at the local test database before any test file loads
+preload = ["./tests/setup.ts"]
+root = "./tests"

@@ -21,3 +21,9 @@ jobs:
 
       - name: Lint
         run: bun run lint
+
+      - name: Start local Supabase
+        run: bun run db:start
+
+      - name: Test
+        run: bun test

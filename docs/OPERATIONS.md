@@ -55,6 +55,23 @@ To adjust the limit, edit `lib/rate-limit.ts` and change the `slidingWindow()` p
 GitHub Actions runs on push to `main` and on PRs:
 1. `bun run type-check` (TypeScript)
 2. `bun run lint` (ESLint via Next.js)
+3. `bun run db:start` (throwaway local Supabase in Docker, built from `supabase/migrations/`)
+4. `bun test` (tests in `tests/`)
+
+## Running tests locally
+
+Needs [Bun](https://bun.sh) and Docker Desktop running.
+
+```sh
+bun install
+bun run db:start   # first run downloads images; later runs take seconds
+bun test
+bun run db:stop    # when finished
+```
+
+The tests only ever talk to the local database started by `db:start`. `tests/setup.ts`
+refuses to run against any non-local Supabase URL, even if `.env.local` points at
+production.
 
 ## Common Issues
 
