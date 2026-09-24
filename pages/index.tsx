@@ -3,13 +3,13 @@ import Link from 'next/link'
 import LoginButton from '../components/LoginButton'
 import Layout from '../components/Layout'
 import CalendarPaper from '../components/CalendarPaper'
-import FlipCalendar from '../components/FlipCalendar'
+import CrossOffDemo from '../components/CrossOffDemo'
 
 export default function Home() {
   const { isSignedIn, isLoaded } = useUser()
 
   return (
-    <Layout headerRight={<LoginButton />} background={<CalendarPaper />}>
+    <Layout wide headerRight={<LoginButton />} background={<CalendarPaper />}>
       <div className="py-10 sm:py-24">
         <div className="flex flex-col gap-12 sm:flex-row sm:items-center sm:justify-between sm:gap-10">
           <div className="max-w-md">
@@ -39,7 +39,7 @@ export default function Home() {
               )}
             </div>
           </div>
-          <FlipCalendar />
+          <CrossOffDemo />
         </div>
       </div>
     </Layout>
