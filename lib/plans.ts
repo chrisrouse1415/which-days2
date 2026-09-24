@@ -60,6 +60,18 @@ function validateDates(dates: unknown): string[] {
   return uniqueDates as string[]
 }
 
+/**
+ * Reject dates before yesterday (UTC). The one-day slack covers organizers whose
+ * local "today" is behind UTC.
+ */
+function assertNotPast(dates: string[]) {
+  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+  const past = dates.find((d) => d < cutoff)
+  if (past) {
+    throw new ValidationError(`Dates in the past can't be added: ${past}`)
+  }
+}
+
 async function getOwnedPlan(planId: string, clerkId: string) {
   const { data: plan, error } = await supabaseAdmin
     .from('plans')
@@ -79,6 +91,7 @@ async function getOwnedPlan(planId: string, clerkId: string) {
 export async function createPlan(ownerClerkId: string, input: PlanInput) {
   const trimmedTitle = validateTitle(input.title)
   const uniqueDates = validateDates(input.dates)
+  assertNotPast(uniqueDates)
 
   const quota = await checkQuota(ownerClerkId)
   if (!quota.canCreate) {
@@ -136,9 +149,10 @@ export async function createPlan(ownerClerkId: string, input: PlanInput) {
 }
 
 export async function getOwnerPlans(clerkId: string) {
+  // One round trip: plans with just enough of their participants and dates to summarise
   const { data: plans, error } = await supabaseAdmin
     .from('plans')
-    .select()
+    .select('*, participants(is_done), plan_dates(date, status)')
     .eq('owner_clerk_id', clerkId)
     .neq('status', 'deleted')
     .order('created_at', { ascending: false })
@@ -148,34 +162,22 @@ export async function getOwnerPlans(clerkId: string) {
     throw error
   }
 
-  if (!plans || plans.length === 0) return []
-
-  const planIds = plans.map((p) => p.id)
-
-  const { data: participants, error: pErr } = await supabaseAdmin
-    .from('participants')
-    .select('plan_id, is_done')
-    .in('plan_id', planIds)
-
-  if (pErr) {
-    logger.error('Error fetching participants for owner plans', { userId: clerkId }, pErr)
-    throw pErr
-  }
-
-  const countMap: Record<string, { total: number; done: number }> = {}
-  for (const p of participants ?? []) {
-    if (!countMap[p.plan_id]) {
-      countMap[p.plan_id] = { total: 0, done: 0 }
+  return (plans ?? []).map(({ participants, plan_dates: planDates, ...plan }) => {
+    let openCount = 0
+    let pickedDate: string | null = null
+    for (const d of planDates ?? []) {
+      if (d.status === 'viable' || d.status === 'reopened') openCount++
+      if (d.status === 'locked') pickedDate = d.date
     }
-    countMap[p.plan_id].total++
-    if (p.is_done) countMap[p.plan_id].done++
-  }
-
-  return plans.map((plan) => ({
-    ...plan,
-    participantCount: countMap[plan.id]?.total ?? 0,
-    doneCount: countMap[plan.id]?.done ?? 0,
-  }))
+    return {
+      ...plan,
+      participantCount: participants?.length ?? 0,
+      doneCount: participants?.filter((p) => p.is_done).length ?? 0,
+      dateCount: planDates?.length ?? 0,
+      openCount,
+      pickedDate,
+    }
+  })
 }
 
 export async function getPlanForOwner(planId: string, clerkId: string) {
@@ -233,6 +235,20 @@ export async function updatePlanStatus(
     throw updateErr
   }
 
+  // Reopening a decided plan un-picks its day so it can be crossed off or picked again
+  if (status === 'active') {
+    const { error: unpickErr } = await supabaseAdmin
+      .from('plan_dates')
+      .update({ status: 'viable' as const, updated_at: new Date().toISOString() })
+      .eq('plan_id', planId)
+      .eq('status', 'locked')
+
+    if (unpickErr) {
+      logger.error('Error un-picking plan date', { planId }, unpickErr)
+      throw unpickErr
+    }
+  }
+
   const eventType = status === 'locked' ? 'plan_locked' : status === 'active' ? 'plan_unlocked' : 'plan_deleted'
   await supabaseAdmin.from('event_log').insert({
     plan_id: planId,
@@ -241,6 +257,64 @@ export async function updatePlanStatus(
   })
 
   return { status }
+}
+
+/**
+ * Organizer picks the final day: that date becomes "locked" (shown as Picked) and
+ * the plan closes to further changes. Unlocking the plan (status → active) undoes it.
+ */
+export async function pickDate(planId: string, planDateId: string, clerkId: string) {
+  const plan = await getOwnedPlan(planId, clerkId)
+
+  if (plan.status !== 'active') {
+    throw new ValidationError('Only open plans can have a day picked')
+  }
+
+  const { data: planDate, error: pdErr } = await supabaseAdmin
+    .from('plan_dates')
+    .select()
+    .eq('id', planDateId)
+    .single()
+
+  if (pdErr || !planDate || planDate.plan_id !== planId) {
+    throw new ValidationError('Date not found in this plan')
+  }
+  if (planDate.status !== 'viable' && planDate.status !== 'reopened') {
+    throw new ValidationError('Only open days can be picked')
+  }
+
+  const now = new Date().toISOString()
+  // Guarded on status so a cross-off landing at the same moment can't be overwritten
+  const { data: picked, error: dateErr } = await supabaseAdmin
+    .from('plan_dates')
+    .update({ status: 'locked' as const, updated_at: now })
+    .eq('id', planDateId)
+    .in('status', ['viable', 'reopened'])
+    .select('id')
+
+  if (dateErr) {
+    logger.error('Error picking date', { planId, planDateId }, dateErr)
+    throw dateErr
+  }
+  if (!picked || picked.length === 0) {
+    throw new ValidationError('That day was just crossed off — pick another')
+  }
+
+  const [planResult] = await Promise.all([
+    supabaseAdmin.from('plans').update({ status: 'locked' as const, updated_at: now }).eq('id', planId),
+    supabaseAdmin.from('event_log').insert({
+      plan_id: planId,
+      event_type: 'date_picked',
+      metadata: { plan_date_id: planDateId },
+    }),
+  ])
+
+  if (planResult.error) {
+    logger.error('Error locking plan after pick', { planId }, planResult.error)
+    throw planResult.error
+  }
+
+  return { status: 'locked' as const, pickedDateId: planDateId }
 }
 
 export async function editPlan(planId: string, clerkId: string, input: EditPlanInput) {
@@ -286,6 +360,8 @@ export async function editPlan(planId: string, clerkId: string, input: EditPlanI
 
     const datesToRemove = (currentDates ?? []).filter((d) => !newDateStrings.has(d.date))
     const datesToAdd = uniqueDates.filter((d) => !currentDateStrings.has(d))
+    // Existing dates may have passed; only newly added ones must be upcoming
+    assertNotPast(datesToAdd)
 
     if (datesToRemove.length > 0 || datesToAdd.length > 0) {
       datesChanged = true
@@ -384,60 +460,41 @@ export async function resetPlan(planId: string, clerkId: string) {
 }
 
 export async function getPlanWithMatrix(planId: string, clerkId: string) {
-  const plan = await getOwnedPlan(planId, clerkId)
+  // One round trip for the plan, its dates (+ availability) and participants;
+  // ownership is checked on the result before anything is returned
+  const { data, error } = await supabaseAdmin
+    .from('plans')
+    .select('*, plan_dates(*, availability(participant_id, status)), participants(*)')
+    .eq('id', planId)
+    .order('date', { referencedTable: 'plan_dates', ascending: true })
+    .order('created_at', { referencedTable: 'participants', ascending: true })
+    .maybeSingle()
 
-  const [datesResult, participantsResult] = await Promise.all([
-    supabaseAdmin
-      .from('plan_dates')
-      .select()
-      .eq('plan_id', planId)
-      .order('date', { ascending: true }),
-    supabaseAdmin
-      .from('participants')
-      .select()
-      .eq('plan_id', planId)
-      .order('created_at', { ascending: true }),
-  ])
-
-  if (datesResult.error) {
-    logger.error('Error fetching plan dates', { planId }, datesResult.error)
-    throw datesResult.error
+  if (error) {
+    logger.error('Error fetching plan with matrix', { planId }, error)
+    throw error
   }
-  if (participantsResult.error) {
-    logger.error('Error fetching participants', { planId }, participantsResult.error)
-    throw participantsResult.error
+  if (!data) {
+    throw new PlanNotFoundError()
+  }
+  if (data.owner_clerk_id !== clerkId) {
+    throw new NotOwnerError()
   }
 
-  const dates = datesResult.data ?? []
-  const participants = participantsResult.data ?? []
+  const { plan_dates: planDates, participants: participantRows, ...plan } = data
+  const participants = participantRows ?? []
 
-  const dateIds = dates.map((d) => d.id)
+  // Matrix: { [planDateId]: { [participantId]: 'available' | 'unavailable' } }
   const matrix: Record<string, Record<string, string>> = {}
-
-  if (dateIds.length > 0) {
-    const { data: availability, error: aErr } = await supabaseAdmin
-      .from('availability')
-      .select('plan_date_id, participant_id, status')
-      .in('plan_date_id', dateIds)
-
-    if (aErr) {
-      logger.error('Error fetching availability for matrix', { planId }, aErr)
-      throw aErr
-    }
-
-    // Build matrix: { [planDateId]: { [participantId]: 'available' | 'unavailable' } }
-    for (const d of dates) {
-      matrix[d.id] = {}
-      for (const p of participants) {
-        matrix[d.id][p.id] = 'available'
-      }
-    }
+  const dates = (planDates ?? []).map(({ availability, ...date }) => {
+    const row: Record<string, string> = {}
+    for (const p of participants) row[p.id] = 'available'
     for (const a of availability ?? []) {
-      if (matrix[a.plan_date_id]) {
-        matrix[a.plan_date_id][a.participant_id] = a.status
-      }
+      if (a.participant_id in row) row[a.participant_id] = a.status
     }
-  }
+    matrix[date.id] = row
+    return date
+  })
 
   return { plan, dates, participants, matrix }
 }

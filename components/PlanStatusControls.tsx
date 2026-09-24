@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import Link from 'next/link'
-import StatusBadge from './StatusBadge'
 
 interface PlanStatusControlsProps {
   planId: string
@@ -50,7 +49,7 @@ export default function PlanStatusControls({
     }
   }
 
-  async function handleStatusChange(status: 'locked' | 'deleted' | 'active') {
+  async function handleStatusChange(status: 'deleted') {
     if (await patchPlan({ status }, status)) {
       setConfirming(null)
       onStatusChanged(status)
@@ -86,26 +85,17 @@ export default function PlanStatusControls({
     </div>
   )
 
+  // Decided plans: reopening lives with the picked day, so only deletion is left here
   if (currentStatus === 'locked') {
     return (
       <div className="space-y-3">
-        <div className="flex flex-wrap items-center gap-3">
-          <StatusBadge status="locked" />
-          <button
-            onClick={() => handleStatusChange('active')}
-            disabled={loading !== null}
-            className="btn-secondary !px-3.5 !py-1.5"
-          >
-            {loading === 'active' ? 'Unlocking…' : 'Unlock plan'}
-          </button>
-          <button
-            onClick={() => setConfirming('delete')}
-            disabled={loading !== null}
-            className="btn-danger !px-3.5 !py-1.5"
-          >
-            Delete plan
-          </button>
-        </div>
+        <button
+          onClick={() => setConfirming('delete')}
+          disabled={loading !== null}
+          className="btn-danger !px-3.5 !py-1.5"
+        >
+          Delete plan
+        </button>
         {deleteConfirm}
         {error && (
           <p className="text-xs text-cut-600" role="alert">
@@ -125,13 +115,6 @@ export default function PlanStatusControls({
           </Link>
         )}
         <button
-          onClick={() => handleStatusChange('locked')}
-          disabled={loading !== null}
-          className="btn-secondary !px-3.5 !py-1.5"
-        >
-          {loading === 'locked' ? 'Locking…' : 'Lock plan'}
-        </button>
-        <button
           onClick={() => setConfirming('reset')}
           disabled={loading !== null}
           className="btn-secondary !px-3.5 !py-1.5"
@@ -150,7 +133,8 @@ export default function PlanStatusControls({
       {confirming === 'reset' && (
         <div className="space-y-2.5 rounded-lg border border-amber-200 bg-amber-50 p-3.5">
           <p className="text-sm text-amber-800">
-            This removes all participants and their responses. The plan title and dates are kept.
+            This removes everyone who has joined and their responses &mdash; they&rsquo;ll need to join
+            again. The title and dates stay.
           </p>
           <div className="flex items-center gap-2">
             <button

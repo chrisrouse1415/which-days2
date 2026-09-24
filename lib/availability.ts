@@ -13,7 +13,7 @@ import {
 
 export async function toggleUnavailable(participantId: string, planDateId: string) {
   const [participantResult, planDateResult] = await Promise.all([
-    supabaseAdmin.from('participants').select().eq('id', participantId).single(),
+    supabaseAdmin.from('participants').select('*, plan:plans(status)').eq('id', participantId).single(),
     supabaseAdmin.from('plan_dates').select().eq('id', planDateId).single(),
   ])
 
@@ -40,64 +40,64 @@ export async function toggleUnavailable(participantId: string, planDateId: strin
     throw new DateLockedError()
   }
 
-  const { data: plan, error: planErr } = await supabaseAdmin
-    .from('plans')
-    .select('status')
-    .eq('id', participant.plan_id)
-    .single()
-
-  if (planErr || !plan) {
+  if (!participant.plan) {
     throw new PlanNotFoundError()
   }
 
-  if (plan.status !== 'active') {
+  if (participant.plan.status !== 'active') {
     throw new PlanNotActiveError()
   }
 
-  const { data: availability, error: upsertErr } = await supabaseAdmin
-    .from('availability')
-    .upsert(
-      {
-        participant_id: participantId,
-        plan_date_id: planDateId,
-        status: 'unavailable' as const,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'participant_id,plan_date_id' }
-    )
-    .select()
-    .single()
+  const now = new Date().toISOString()
+  const undoDeadline = new Date(Date.now() + UNDO_WINDOW_MS).toISOString()
 
+  // Independent writes — run together to save round trips
+  const [availabilityResult, dateResult, logResult] = await Promise.all([
+    supabaseAdmin
+      .from('availability')
+      .upsert(
+        {
+          participant_id: participantId,
+          plan_date_id: planDateId,
+          status: 'unavailable' as const,
+          updated_at: now,
+        },
+        { onConflict: 'participant_id,plan_date_id' }
+      )
+      .select()
+      .single(),
+    // Never overwrite a day the organizer picked in the meantime
+    supabaseAdmin
+      .from('plan_dates')
+      .update({ status: 'eliminated' as const, updated_at: now })
+      .eq('id', planDateId)
+      .neq('status', 'locked'),
+    supabaseAdmin
+      .from('event_log')
+      .insert({
+        plan_id: participant.plan_id,
+        participant_id: participantId,
+        event_type: 'date_marked_unavailable',
+        metadata: { plan_date_id: planDateId },
+        undo_deadline: undoDeadline,
+      })
+      .select()
+      .single(),
+  ])
+
+  const { data: availability, error: upsertErr } = availabilityResult
   if (upsertErr) {
     logger.error('Error upserting availability', { participantId, planDateId }, upsertErr)
     throw upsertErr
   }
 
-  const { error: dateUpdateErr } = await supabaseAdmin
-    .from('plan_dates')
-    .update({ status: 'eliminated' as const, updated_at: new Date().toISOString() })
-    .eq('id', planDateId)
-
-  if (dateUpdateErr) {
-    logger.error('Error updating date status', { participantId, planDateId }, dateUpdateErr)
-    throw dateUpdateErr
+  if (dateResult.error) {
+    logger.error('Error updating date status', { participantId, planDateId }, dateResult.error)
+    throw dateResult.error
   }
 
-  const undoDeadline = new Date(Date.now() + UNDO_WINDOW_MS).toISOString()
-
-  const { data: eventLog, error: logErr } = await supabaseAdmin
-    .from('event_log')
-    .insert({
-      plan_id: participant.plan_id,
-      participant_id: participantId,
-      event_type: 'date_marked_unavailable',
-      metadata: { plan_date_id: planDateId },
-      undo_deadline: undoDeadline,
-    })
-    .select()
-    .single()
-
-  if (logErr) {
+  const { data: eventLog, error: logErr } = logResult
+  if (logErr || !eventLog) {
     logger.error('Error inserting event log', { participantId, planDateId }, logErr)
     throw logErr
   }
@@ -113,12 +113,17 @@ export async function toggleUnavailable(participantId: string, planDateId: strin
 export async function undoUnavailable(participantId: string, eventLogId: string) {
   const { data: event, error: eventErr } = await supabaseAdmin
     .from('event_log')
-    .select()
+    .select('*, plan:plans(status)')
     .eq('id', eventLogId)
     .single()
 
   if (eventErr || !event) {
     throw new UndoNotAllowedError('Event not found')
+  }
+
+  // Once the organizer has picked a day (or closed the plan), nothing can change
+  if (event.plan?.status !== 'active') {
+    throw new PlanNotActiveError()
   }
 
   // Verify actor matches
@@ -162,26 +167,25 @@ export async function undoUnavailable(participantId: string, eventLogId: string)
     throw countErr
   }
 
-  // If no other unavailable marks, restore date to viable
-  let dateStatus: 'viable' | 'eliminated' = 'eliminated'
-  if ((count ?? 0) === 0) {
-    dateStatus = 'viable'
-    const { error: dateUpdateErr } = await supabaseAdmin
-      .from('plan_dates')
-      .update({ status: 'viable' as const, updated_at: new Date().toISOString() })
-      .eq('id', planDateId)
+  // If no other unavailable marks, the date is open again. Clearing the undo
+  // deadline doesn't depend on that, so both writes go together.
+  const reopen = (count ?? 0) === 0
+  const dateStatus: 'viable' | 'eliminated' = reopen ? 'viable' : 'eliminated'
+  const [dateResult] = await Promise.all([
+    reopen
+      ? supabaseAdmin
+          .from('plan_dates')
+          .update({ status: 'viable' as const, updated_at: new Date().toISOString() })
+          .eq('id', planDateId)
+          .eq('status', 'eliminated')
+      : Promise.resolve({ error: null }),
+    supabaseAdmin.from('event_log').update({ undo_deadline: null }).eq('id', eventLogId),
+  ])
 
-    if (dateUpdateErr) {
-      logger.error('Error restoring date status', { participantId, planDateId }, dateUpdateErr)
-      throw dateUpdateErr
-    }
+  if (dateResult.error) {
+    logger.error('Error restoring date status', { participantId, planDateId }, dateResult.error)
+    throw dateResult.error
   }
-
-  // Null out undo_deadline on the original event
-  await supabaseAdmin
-    .from('event_log')
-    .update({ undo_deadline: null })
-    .eq('id', eventLogId)
 
   return { availability, dateStatus }
 }

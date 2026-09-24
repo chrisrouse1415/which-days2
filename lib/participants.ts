@@ -79,7 +79,7 @@ export async function joinPlan(shareId: string, displayName: string) {
 export async function toggleDone(participantId: string) {
   const { data: participant, error: pErr } = await supabaseAdmin
     .from('participants')
-    .select()
+    .select('*, plan:plans(status)')
     .eq('id', participantId)
     .single()
 
@@ -87,17 +87,11 @@ export async function toggleDone(participantId: string) {
     throw new ParticipantNotFoundError()
   }
 
-  const { data: plan, error: planErr } = await supabaseAdmin
-    .from('plans')
-    .select('status')
-    .eq('id', participant.plan_id)
-    .single()
-
-  if (planErr || !plan) {
+  if (!participant.plan) {
     throw new PlanNotFoundError()
   }
 
-  if (plan.status !== 'active') {
+  if (participant.plan.status !== 'active') {
     throw new PlanNotActiveError()
   }
 
@@ -113,27 +107,28 @@ export async function toggleDone(participantId: string) {
     throw updateErr
   }
 
-  // When marking done, expire all active undo deadlines for this participant
-  // so eliminated dates stay eliminated permanently
-  if (newIsDone) {
-    const { error: expireErr } = await supabaseAdmin
-      .from('event_log')
-      .update({ undo_deadline: null })
-      .eq('participant_id', participantId)
-      .gt('undo_deadline', new Date().toISOString())
+  // When marking done, expire all active undo deadlines for this participant so
+  // crossed-off dates stay crossed off. Independent of the log insert, so run together.
+  const [expireResult] = await Promise.all([
+    newIsDone
+      ? supabaseAdmin
+          .from('event_log')
+          .update({ undo_deadline: null })
+          .eq('participant_id', participantId)
+          .gt('undo_deadline', new Date().toISOString())
+      : Promise.resolve({ error: null }),
+    supabaseAdmin.from('event_log').insert({
+      plan_id: participant.plan_id,
+      participant_id: participantId,
+      event_type: newIsDone ? 'participant_done' : 'participant_undone',
+      metadata: {},
+    }),
+  ])
 
-    if (expireErr) {
-      logger.error('Error expiring undo deadlines on done', { participantId }, expireErr)
-      // Non-fatal — don't throw, the done toggle already succeeded
-    }
+  if (expireResult.error) {
+    logger.error('Error expiring undo deadlines on done', { participantId }, expireResult.error)
+    // Non-fatal — the done toggle already succeeded
   }
-
-  await supabaseAdmin.from('event_log').insert({
-    plan_id: participant.plan_id,
-    participant_id: participantId,
-    event_type: newIsDone ? 'participant_done' : 'participant_undone',
-    metadata: {},
-  })
 
   return { is_done: newIsDone }
 }

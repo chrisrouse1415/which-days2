@@ -43,7 +43,7 @@ export default function DoneButton({ participantId, isDone, onToggled }: DoneBut
         </button>
       ) : (
         <>
-          <p className="text-center text-xs text-stone-500">Available for all remaining dates?</p>
+          <p className="text-center text-xs text-stone-500">Crossed off every day you can&rsquo;t make?</p>
           <button onClick={handleClick} disabled={loading} className="btn-primary min-h-[44px] w-full !py-3">
             {loading ? 'Updating…' : 'I’m done'}
           </button>

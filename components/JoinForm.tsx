@@ -6,10 +6,13 @@ interface JoinFormProps {
   planTitle: string
   ownerName: string | null
   onJoined: (participantId: string) => void
+  defaultName?: string
+  /** The organizer joining their own plan to cross off days */
+  isOrganizer?: boolean
 }
 
-export default function JoinForm({ shareId, planTitle, ownerName, onJoined }: JoinFormProps) {
-  const [displayName, setDisplayName] = useState('')
+export default function JoinForm({ shareId, planTitle, ownerName, onJoined, defaultName = '', isOrganizer = false }: JoinFormProps) {
+  const [displayName, setDisplayName] = useState(defaultName)
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -59,7 +62,7 @@ export default function JoinForm({ shareId, planTitle, ownerName, onJoined }: Jo
     <div className="mx-auto max-w-sm">
       <div className="card p-8 shadow-raised">
         <div className="mb-6">
-          <p className="section-label">You&rsquo;re invited</p>
+          <p className="section-label">{isOrganizer ? 'Cross off days yourself' : <>You&rsquo;re invited</>}</p>
           <h2 className="mt-2 font-display text-2xl font-semibold tracking-tight text-ink">
             {planTitle}
           </h2>

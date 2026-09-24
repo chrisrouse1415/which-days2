@@ -1,3 +1,5 @@
+import { useState } from 'react'
+import Link from 'next/link'
 import ForceReopenButton from './ForceReopenButton'
 import StatusBadge from './StatusBadge'
 import { formatDate } from '../lib/format-date'
@@ -20,7 +22,101 @@ interface ResultsMatrixProps {
   dates: PlanDate[]
   participants: Participant[]
   matrix: Record<string, Record<string, string>>
+  editHref: string
   onDataRefresh: () => void
+}
+
+const isOpen = (d: PlanDate) => d.status === 'viable' || d.status === 'reopened'
+// Picked first, then open days, then crossed-off ones — each group in date order
+const rank = (d: PlanDate) => (d.status === 'locked' ? 0 : isOpen(d) ? 1 : 2)
+
+function PickDayButton({
+  planId,
+  planDateId,
+  dateLabel,
+  onPicked,
+}: {
+  planId: string
+  planDateId: string
+  dateLabel: string
+  onPicked: () => void
+}) {
+  const [confirming, setConfirming] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handlePick() {
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/plans/manage?planId=${planId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pickDateId: planDateId }),
+      })
+      if (res.ok) {
+        onPicked()
+      } else {
+        const data = await res.json().catch(() => ({}))
+        setError(data.error || 'Couldn’t pick this day')
+        setTimeout(() => setError(null), 3000)
+      }
+    } catch {
+      setError('Network error')
+      setTimeout(() => setError(null), 3000)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (confirming) {
+    return (
+      <div>
+        <div className="flex items-center justify-end gap-1">
+          <button
+            onClick={handlePick}
+            disabled={loading}
+            className="rounded-lg bg-pine-600 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-pine-700 disabled:opacity-50"
+          >
+            {loading ? 'Picking…' : 'Confirm'}
+          </button>
+          <button
+            onClick={() => setConfirming(false)}
+            className="rounded-lg border border-stone-300 px-2.5 py-1 text-xs font-semibold text-stone-600 transition-colors hover:bg-stone-50"
+          >
+            Cancel
+          </button>
+        </div>
+        {error && (
+          <p className="mt-1 text-xs text-cut-600" role="alert">
+            {error}
+          </p>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <button
+      onClick={() => setConfirming(true)}
+      className="rounded-lg border border-pine-200 bg-pine-50 px-2.5 py-1 text-xs font-semibold text-pine-700 transition-colors hover:bg-pine-100"
+      title={`Pick ${dateLabel} — tells everyone this is the day and closes the plan`}
+      aria-label={`Pick ${dateLabel}`}
+    >
+      Pick this day
+    </button>
+  )
+}
+
+function CantMark() {
+  return (
+    <>
+      <svg viewBox="0 0 12 12" className="mx-auto h-3.5 w-3.5 text-cut-500" aria-hidden="true">
+        <path d="M1.5 9.5 Q6 6.5 10.5 2.5" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+      </svg>
+      <span className="sr-only">Can&rsquo;t make it</span>
+    </>
+  )
 }
 
 export default function ResultsMatrix({
@@ -29,98 +125,106 @@ export default function ResultsMatrix({
   dates,
   participants,
   matrix,
+  editHref,
   onDataRefresh,
 }: ResultsMatrixProps) {
   if (dates.length === 0) {
     return <p className="text-sm text-stone-400">No dates in this plan.</p>
   }
 
-  if (participants.length === 0) {
-    return (
-      <div className="card p-8 text-center">
-        <p className="text-sm font-medium text-ink">No responses yet</p>
-        <p className="mt-1 text-sm text-stone-500">
-          Share the link above &mdash; responses appear here as they come in.
-        </p>
-      </div>
-    )
-  }
+  const isActive = planStatus === 'active'
+  const openCount = dates.filter(isOpen).length
+  const sorted = dates.slice().sort((a, b) => rank(a) - rank(b) || a.date.localeCompare(b.date))
 
   return (
-    <div className="card overflow-x-auto">
-      <table className="min-w-full text-sm">
-        <thead>
-          <tr className="bg-stone-50">
-            <th className="sticky left-0 z-10 border-b border-stone-200 bg-stone-50 px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-stone-500">
-              Date
-            </th>
-            <th className="border-b border-stone-200 px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-stone-500">
-              Status
-            </th>
-            {participants.map((p) => (
-              <th
-                key={p.id}
-                className="border-b border-stone-200 px-3 py-2.5 text-center text-xs font-semibold text-stone-600"
-              >
-                <span className="block">{p.display_name}</span>
-                {p.is_done && <span className="text-xs font-medium text-pine-600">done</span>}
-              </th>
-            ))}
-            {planStatus === 'active' && (
-              <th className="border-b border-stone-200 px-3 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-stone-500">
-                Actions
-              </th>
+    <div className="space-y-3">
+      {isActive &&
+        (openCount === 0 ? (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
+            <p className="text-sm font-medium text-amber-800">
+              Every day has been crossed off. Add more dates, or reopen one below.
+            </p>
+            <Link href={editHref} className="btn-secondary !px-3.5 !py-1.5">
+              Add dates
+            </Link>
+          </div>
+        ) : (
+          <p className="text-sm text-stone-600">
+            <span className="font-semibold text-pine-700">
+              {openCount} of {dates.length}
+            </span>{' '}
+            {dates.length === 1 ? 'day' : 'days'} still open
+            {participants.length === 0 && (
+              <span className="text-stone-400"> &middot; no responses yet</span>
             )}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-stone-100">
-          {dates.map((date) => {
-            const isEliminated = date.status === 'eliminated'
-            return (
-              <tr key={date.id} className={isEliminated ? 'bg-stone-50' : 'bg-white'}>
-                <td
-                  className={`sticky left-0 z-10 whitespace-nowrap px-3 py-2.5 font-semibold ${
-                    isEliminated ? 'struck bg-stone-50' : 'bg-white text-ink'
-                  }`}
+          </p>
+        ))}
+
+      <div className="card overflow-x-auto">
+        <table className="min-w-full text-sm">
+          <thead>
+            <tr className="bg-stone-50">
+              <th className="sticky left-0 z-10 border-b border-stone-200 bg-stone-50 px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-stone-500">
+                Day
+              </th>
+              {participants.map((p) => (
+                <th
+                  key={p.id}
+                  className="border-b border-stone-200 px-3 py-2.5 text-center text-xs font-semibold text-stone-600"
                 >
-                  {formatDate(date.date)}
-                </td>
-                <td className="px-3 py-2.5">
-                  <StatusBadge status={date.status} />
-                </td>
-                {participants.map((p) => {
-                  const status = matrix[date.id]?.[p.id] ?? 'available'
-                  return (
+                  <span className="block whitespace-nowrap">{p.display_name}</span>
+                  {p.is_done && <span className="text-[11px] font-medium text-pine-600">done</span>}
+                </th>
+              ))}
+              <th className="border-b border-stone-200 px-3 py-2.5">
+                <span className="sr-only">Actions</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-stone-100">
+            {sorted.map((date) => {
+              const crossedOff = date.status === 'eliminated'
+              const rowBg = crossedOff ? 'bg-stone-50' : date.status === 'locked' ? 'bg-pine-50' : 'bg-white'
+              return (
+                <tr key={date.id} className={rowBg}>
+                  <td
+                    className={`sticky left-0 z-10 whitespace-nowrap px-3 py-2.5 font-semibold ${rowBg} ${
+                      crossedOff ? 'struck' : 'text-ink'
+                    }`}
+                  >
+                    {formatDate(date.date)}
+                    {crossedOff && <span className="sr-only"> (crossed off)</span>}
+                  </td>
+                  {participants.map((p) => (
                     <td key={p.id} className="px-3 py-2.5 text-center">
-                      {status === 'unavailable' ? (
-                        <span className="font-medium text-cut-500" title="Unavailable" aria-label="Unavailable">
-                          &#x2717;
-                        </span>
-                      ) : (
-                        <span className="font-medium text-pine-600" title="Available" aria-label="Available">
-                          &#x2713;
-                        </span>
-                      )}
+                      {matrix[date.id]?.[p.id] === 'unavailable' && <CantMark />}
                     </td>
-                  )
-                })}
-                {planStatus === 'active' && (
-                  <td className="min-h-[44px] min-w-[44px] px-3 py-2.5 text-center">
-                    {date.status === 'eliminated' && (
+                  ))}
+                  <td className="whitespace-nowrap px-3 py-2 text-right">
+                    {date.status === 'locked' ? (
+                      <StatusBadge status="locked" />
+                    ) : !isActive ? null : crossedOff ? (
                       <ForceReopenButton
                         planId={planId}
                         planDateId={date.id}
                         dateLabel={formatDate(date.date)}
                         onReopened={onDataRefresh}
                       />
+                    ) : (
+                      <PickDayButton
+                        planId={planId}
+                        planDateId={date.id}
+                        dateLabel={formatDate(date.date)}
+                        onPicked={onDataRefresh}
+                      />
                     )}
                   </td>
-                )}
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }

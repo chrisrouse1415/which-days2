@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
+import { getAuth } from '@clerk/nextjs/server'
 import { PlanNotFoundError } from '../../../lib/errors'
 import { sendApiError } from '../../../lib/api-errors'
 import { supabaseAdmin } from '../../../lib/supabase-admin'
@@ -25,70 +26,34 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ error: 'Invalid participantId parameter' })
     }
 
-    // Query 1: Fetch plan by share ID
+    // One round trip: the plan with its owner's name, dates (+ availability) and participants
     const { data: plan, error: planError } = await supabaseAdmin
       .from('plans')
-      .select()
+      .select(
+        `id, title, share_id, status, created_at, owner_clerk_id,
+        owner:users(first_name),
+        plan_dates(id, date, status, availability(id, participant_id, status)),
+        participants(id, display_name, is_done, needs_review, created_at)`
+      )
       .eq('share_id', shareId)
-      .single()
+      .order('date', { referencedTable: 'plan_dates', ascending: true })
+      .order('created_at', { referencedTable: 'participants', ascending: true })
+      .maybeSingle()
 
-    if (planError || !plan) {
+    if (planError) {
+      logger.error('Error fetching plan', { shareId }, planError)
+      throw planError
+    }
+    if (!plan) {
       throw new PlanNotFoundError()
     }
 
-    // Queries 2-4: Fetch dates, participants, and owner in parallel
-    const [datesResult, participantsResult, ownerResult] = await Promise.all([
-      supabaseAdmin
-        .from('plan_dates')
-        .select()
-        .eq('plan_id', plan.id)
-        .order('date', { ascending: true }),
-      supabaseAdmin
-        .from('participants')
-        .select()
-        .eq('plan_id', plan.id)
-        .order('created_at', { ascending: true }),
-      supabaseAdmin
-        .from('users')
-        .select('first_name')
-        .eq('clerk_id', plan.owner_clerk_id)
-        .single(),
-    ])
-
-    if (datesResult.error) {
-      logger.error('Error fetching plan dates', { shareId, planId: plan.id }, datesResult.error)
-      throw datesResult.error
-    }
-    if (participantsResult.error) {
-      logger.error('Error fetching participants', { shareId, planId: plan.id }, participantsResult.error)
-      throw participantsResult.error
-    }
-
-    const dates = datesResult.data ?? []
-    const participants = participantsResult.data ?? []
-    const ownerName = ownerResult.data?.first_name || null
-
-    // Query 5: Fetch all availability rows for plan dates in one query
-    const dateIds = dates.map((d) => d.id)
-    let allAvailability: Array<{
-      participant_id: string
-      plan_date_id: string
-      status: string
-      id: string
-    }> = []
-
-    if (dateIds.length > 0) {
-      const { data: avail, error: availErr } = await supabaseAdmin
-        .from('availability')
-        .select('id, participant_id, plan_date_id, status')
-        .in('plan_date_id', dateIds)
-
-      if (availErr) {
-        logger.error('Error fetching availability', { shareId, planId: plan.id }, availErr)
-        throw availErr
-      }
-      allAvailability = avail ?? []
-    }
+    const dates = plan.plan_dates ?? []
+    const participants = plan.participants ?? []
+    const ownerName = plan.owner?.first_name || null
+    const allAvailability = dates.flatMap((d) =>
+      (d.availability ?? []).map((a) => ({ ...a, plan_date_id: d.id }))
+    )
 
     // Build participant name map for summary
     const participantMap: Record<string, string> = {}
@@ -98,9 +63,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Build availability summary from fetched data (replaces getPlanAvailabilitySummary)
     const summary = dates.map((date) => {
-      const dateUnavailable = allAvailability.filter(
-        (a) => a.plan_date_id === date.id && a.status === 'unavailable'
-      )
+      const dateUnavailable = (date.availability ?? []).filter((a) => a.status === 'unavailable')
       return {
         planDateId: date.id,
         date: date.date,
@@ -142,8 +105,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       created_at: plan.created_at,
     }
 
+    // Lets a signed-in organizer view their own plan without joining it.
+    // Only the boolean leaves the server, never the owner's id.
+    const { userId } = getAuth(req)
+    const isOwner = !!userId && userId === plan.owner_clerk_id
+
     return res.status(200).json({
       plan: safePlan,
+      isOwner,
       ownerName,
       participants: safeParticipants,
       availabilitySummary: summary,

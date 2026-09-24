@@ -85,7 +85,7 @@ export default function PlanForm({
           return
         }
 
-        router.push(data.manageUrl)
+        router.push(`${data.manageUrl}?new=1`)
       }
     } catch {
       setError('Network error. Please try again.')
@@ -136,7 +136,10 @@ export default function PlanForm({
       </div>
 
       <div>
-        <label className="mb-2 block text-sm font-medium text-stone-700">Dates</label>
+        <label className="block text-sm font-medium text-stone-700">Dates</label>
+        <p className="mb-3 mt-0.5 text-xs text-stone-500">
+          Choose days that work for you &mdash; your group will cross off the ones they can&rsquo;t make.
+        </p>
         <DatePicker selectedDates={dates} onChange={setDates} maxDates={MAX_DATES} />
       </div>
 
@@ -156,7 +159,7 @@ export default function PlanForm({
         </button>
         {!isEdit && quota && !quota.canCreate && (
           <p className="mt-2 text-center text-xs text-stone-500">
-            Plan limit reached &mdash; lock or delete a plan to free a slot
+            Plan limit reached &mdash; delete a plan to free up a slot
           </p>
         )}
       </div>

@@ -34,7 +34,7 @@ export default function LiveSummary({ participants, availabilitySummary }: LiveS
         {viableDates.length === 0 && eliminatedDates.length > 0 && (
           <div className="rounded-lg border border-amber-200 bg-amber-50 p-3" role="alert">
             <p className="text-sm font-medium text-amber-800">
-              All dates have been eliminated. The plan owner can reopen dates if needed.
+              Every day has been crossed off. The organizer can add or reopen days.
             </p>
           </div>
         )}
@@ -42,7 +42,7 @@ export default function LiveSummary({ participants, availabilitySummary }: LiveS
         {viableDates.length > 0 && (
           <div>
             <p className="mb-2 text-xs font-semibold text-pine-700">
-              Still in the running ({viableDates.length})
+              Open ({viableDates.length})
             </p>
             <div className="flex flex-wrap gap-1.5">
               {viableDates.map((d) => (
@@ -60,7 +60,7 @@ export default function LiveSummary({ participants, availabilitySummary }: LiveS
         {eliminatedDates.length > 0 && (
           <div>
             <p className="mb-2 text-xs font-semibold text-stone-500">
-              Crossed out ({eliminatedDates.length})
+              Crossed off ({eliminatedDates.length})
             </p>
             <div className="flex flex-wrap gap-1.5">
               {eliminatedDates.map((d) => (

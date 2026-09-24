@@ -4,9 +4,11 @@ import { useRouter } from 'next/router'
 import Link from 'next/link'
 import useSWR from 'swr'
 import LoginButton from '../components/LoginButton'
+import EmptyPlans from '../components/EmptyPlans'
 import Layout, { CenteredPage } from '../components/Layout'
 import StatusBadge from '../components/StatusBadge'
 import { MAX_PLANS } from '../lib/constants'
+import { formatDate } from '../lib/format-date'
 
 interface PlanSummary {
   id: string
@@ -16,6 +18,25 @@ interface PlanSummary {
   created_at: string
   participantCount: number
   doneCount: number
+  dateCount: number
+  openCount: number
+  pickedDate: string | null
+}
+
+/** One line that says where a plan is at: the picked day, or how many days are left. */
+function planProgress(plan: PlanSummary) {
+  if (plan.pickedDate) {
+    return <span className="font-semibold text-pine-700">Picked {formatDate(plan.pickedDate)}</span>
+  }
+  if (plan.status === 'locked') return <span>Closed</span>
+  if (plan.dateCount > 0 && plan.openCount === 0) {
+    return <span className="font-semibold text-amber-700">Every day crossed off</span>
+  }
+  return (
+    <span>
+      {plan.openCount} of {plan.dateCount} {plan.dateCount === 1 ? 'day' : 'days'} open
+    </span>
+  )
 }
 
 const fetcher = (url: string) =>
@@ -69,7 +90,9 @@ export default function Dashboard() {
     return null
   }
 
-  const plans = data?.plans ?? []
+  // Dev only: /dashboard?preview=empty shows the empty state without deleting real plans
+  const previewEmpty = process.env.NODE_ENV !== 'production' && router.query.preview === 'empty'
+  const plans = previewEmpty ? [] : data?.plans ?? []
   const countedPlans = plans.filter((p) => p.status === 'active' || p.status === 'locked')
 
   return (
@@ -99,6 +122,7 @@ export default function Dashboard() {
         <DashboardSkeleton />
       ) : (
         <div className="space-y-3">
+          {plans.length === 0 && <EmptyPlans />}
           {plans.map((plan) => (
             <Link
               key={plan.id}
@@ -109,10 +133,12 @@ export default function Dashboard() {
                 <div className="min-w-0">
                   <h2 className="truncate text-base font-semibold text-ink">{plan.title}</h2>
                   <p className="mt-1 text-sm text-stone-500">
-                    {plan.participantCount} participant{plan.participantCount !== 1 ? 's' : ''}
-                    {plan.participantCount > 0 && (
-                      <span className="text-stone-400"> &middot; {plan.doneCount} done</span>
-                    )}
+                    {planProgress(plan)}
+                    <span className="text-stone-400">
+                      {' '}
+                      &middot; {plan.participantCount}{' '}
+                      {plan.participantCount === 1 ? 'response' : 'responses'}
+                    </span>
                   </p>
                 </div>
                 <StatusBadge status={plan.status} />
@@ -155,7 +181,7 @@ export default function Dashboard() {
                 <div>
                   <p className="text-sm font-semibold text-stone-400">Plan limit reached</p>
                   <p className="mt-0.5 text-xs text-stone-400">
-                    Lock or delete a plan to free up a slot
+                    Delete a plan to free up a slot
                   </p>
                 </div>
               </div>

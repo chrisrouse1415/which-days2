@@ -17,13 +17,16 @@ interface LayoutProps {
   homeHref?: string
   /** Page column width. Defaults to narrow. */
   wide?: boolean
+  /** Decorative layer drawn behind the page (e.g. the landing page's calendar paper). */
+  background?: ReactNode
 }
 
-export default function Layout({ children, headerRight, homeHref = '/', wide = false }: LayoutProps) {
+export default function Layout({ children, headerRight, homeHref = '/', wide = false, background }: LayoutProps) {
   const container = wide ? 'max-w-4xl' : 'max-w-2xl'
 
   return (
-    <div className="min-h-screen bg-paper">
+    <div className="relative isolate min-h-screen bg-paper">
+      {background}
       <header className="sticky top-0 z-30 border-b border-stone-200 bg-paper/95 backdrop-blur-sm">
         <div className={`${container} mx-auto flex min-w-0 items-center justify-between gap-4 px-4 py-3.5`}>
           <Link href={homeHref} className="shrink-0">

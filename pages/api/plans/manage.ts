@@ -5,6 +5,7 @@ import {
   updatePlanStatus,
   editPlan,
   resetPlan,
+  pickDate,
 } from '../../../lib/plans'
 import { sendApiError } from '../../../lib/api-errors'
 import { isValidUUID } from '../../../lib/validation'
@@ -24,12 +25,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     if (req.method === 'PATCH') {
-      const { status, title, dates, reset } = req.body
+      const { status, title, dates, reset, pickDateId } = req.body
 
       // Ensure only one operation type per request
-      const opCount = [reset === true, !!status, title !== undefined || dates !== undefined].filter(Boolean).length
+      const opCount = [
+        reset === true,
+        !!status,
+        title !== undefined || dates !== undefined,
+        pickDateId !== undefined,
+      ].filter(Boolean).length
       if (opCount > 1) {
-        return res.status(400).json({ error: 'Only one operation allowed per request: reset, status change, or edit' })
+        return res.status(400).json({ error: 'Only one operation allowed per request: reset, status change, pick, or edit' })
+      }
+
+      if (pickDateId !== undefined) {
+        if (!isValidUUID(pickDateId)) {
+          return res.status(400).json({ error: 'Invalid pickDateId' })
+        }
+        const result = await pickDate(planId, pickDateId, userId)
+        return res.status(200).json(result)
       }
 
       if (reset === true) {

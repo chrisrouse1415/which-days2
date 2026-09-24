@@ -31,6 +31,9 @@ export default function UndoTimer({ deadline, disabled, onExpired, onUndo }: Und
     return () => clearInterval(interval)
   }, [deadline, getSecondsLeft])
 
+  // Measured once on mount so the draining line runs smoothly in CSS, not per-second
+  const [initialMs] = useState(() => Math.max(0, deadline - Date.now()))
+
   if (secondsLeft <= 0) return null
 
   return (
@@ -38,9 +41,14 @@ export default function UndoTimer({ deadline, disabled, onExpired, onUndo }: Und
       onClick={onUndo}
       disabled={disabled}
       aria-label={`Undo, ${secondsLeft} seconds remaining`}
-      className="min-h-[36px] w-full rounded-lg border border-amber-200 bg-amber-50 px-2 py-1.5 text-xs font-semibold text-amber-700 transition-colors hover:bg-amber-100 disabled:opacity-50"
+      className="relative min-h-[36px] w-full overflow-hidden rounded-lg border border-amber-200 bg-amber-50 px-2 py-1.5 text-xs font-semibold text-amber-700 transition-colors hover:bg-amber-100 disabled:opacity-50"
     >
-      Undo ({secondsLeft}s)
+      Undo
+      <span
+        aria-hidden="true"
+        className="undo-fuse absolute inset-x-0 bottom-0 h-[3px] origin-left bg-amber-400/70"
+        style={{ animationDuration: `${initialMs}ms` }}
+      />
     </button>
   )
 }

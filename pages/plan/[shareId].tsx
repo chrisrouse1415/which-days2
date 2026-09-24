@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
 import useSWR from 'swr'
+import { useUser } from '@clerk/nextjs'
 import type { GetServerSideProps } from 'next'
 import { supabaseAdmin } from '../../lib/supabase-admin'
 import JoinForm from '../../components/JoinForm'
@@ -10,6 +11,8 @@ import DoneButton from '../../components/DoneButton'
 import LiveSummary from '../../components/LiveSummary'
 import NeedsReviewBanner from '../../components/NeedsReviewBanner'
 import Layout from '../../components/Layout'
+import OrganizerView from '../../components/OrganizerView'
+import PickedDay from '../../components/PickedDay'
 
 interface PlanData {
   plan: {
@@ -39,6 +42,8 @@ interface PlanData {
   }> | null
   doneCount: number
   needsReview: boolean
+  /** True when the signed-in viewer created this plan */
+  isOwner: boolean
 }
 
 interface OgMeta {
@@ -68,7 +73,7 @@ export const getServerSideProps: GetServerSideProps<PlanShareProps> = async (ctx
     return {
       props: {
         og: {
-          title: 'Which Days?',
+          title: 'Which days?',
           description: 'When are you free?',
           image: `${host}/og-image.jpg`,
         },
@@ -136,6 +141,9 @@ export default function PlanShare({ og }: PlanShareProps) {
   const [participantId, setParticipantId] = useState<string | null | undefined>(undefined)
   const [isDone, setIsDone] = useState(false)
   const [needsReview, setNeedsReview] = useState(false)
+  // Organizers see a read-only view of their own plan unless they choose to join
+  const [ownerJoining, setOwnerJoining] = useState(false)
+  const { user } = useUser()
 
   // Resolve stored participant session once the router provides shareId,
   // before the first fetch — avoids a duplicate request on load
@@ -150,7 +158,8 @@ export default function PlanShare({ og }: PlanShareProps) {
       : null
 
   const { data: planData, error, isLoading, mutate } = useSWR<PlanData>(swrKey, fetcher, {
-    refreshInterval: 30000, // Poll every 30s for other participants' changes
+    // Poll every 30s for other participants' changes, until the day is picked
+    refreshInterval: (latest) => (latest?.plan.status === 'active' ? 30000 : 0),
     onSuccess: (data) => {
       if (participantId) {
         const me = data.participants.find((p) => p.id === participantId)
@@ -174,7 +183,7 @@ export default function PlanShare({ og }: PlanShareProps) {
   }
 
   function handleDataRefresh() {
-    mutate()
+    return mutate()
   }
 
   const isNotFound = error?.message === 'not_found'
@@ -187,6 +196,11 @@ export default function PlanShare({ og }: PlanShareProps) {
         : 'join'
 
   const myName = planData?.participants.find((p) => p.id === participantId)?.display_name
+  // Once the organizer picks a day, everyone who opens the link just sees the decision
+  const pickedDate =
+    planData?.plan.status === 'locked'
+      ? planData.availabilitySummary.find((d) => d.status === 'locked')
+      : undefined
 
   return (
     <>
@@ -225,15 +239,35 @@ export default function PlanShare({ og }: PlanShareProps) {
           </div>
         ) : phase === 'loading' ? (
           <PlanSkeleton />
+        ) : pickedDate && planData ? (
+          <div className="mx-auto max-w-sm space-y-6 py-4">
+            <div className="text-center">
+              <h1 className="font-display text-2xl font-semibold tracking-tight text-ink">
+                {planData.plan.title}
+              </h1>
+              {planData.ownerName && (
+                <p className="mt-1 text-sm text-stone-500">Organized by {planData.ownerName}</p>
+              )}
+            </div>
+            <PickedDay date={pickedDate.date} label="It’s happening on" />
+          </div>
         ) : phase === 'join' && planData ? (
           planData.plan.status !== 'active' ? (
             <div className="py-16 text-center">
               <p className="text-sm text-stone-600">
                 {planData.plan.status === 'locked'
-                  ? 'This plan is locked and no longer accepting participants.'
+                  ? 'This plan is closed and no longer accepting responses.'
                   : 'This plan is no longer available.'}
               </p>
             </div>
+          ) : planData.isOwner && !ownerJoining ? (
+            <OrganizerView
+              planId={planData.plan.id}
+              title={planData.plan.title}
+              participants={planData.participants}
+              availabilitySummary={planData.availabilitySummary}
+              onCrossOffToo={() => setOwnerJoining(true)}
+            />
           ) : (
             <div className="py-8">
               <JoinForm
@@ -241,7 +275,19 @@ export default function PlanShare({ og }: PlanShareProps) {
                 planTitle={planData.plan.title}
                 ownerName={planData.ownerName}
                 onJoined={handleJoined}
+                defaultName={planData.isOwner ? user?.firstName ?? '' : ''}
+                isOrganizer={planData.isOwner}
               />
+              {planData.isOwner && (
+                <p className="mt-4 text-center">
+                  <button
+                    onClick={() => setOwnerJoining(false)}
+                    className="text-sm font-medium text-pine-700 transition-colors hover:text-pine-800"
+                  >
+                    &larr; Back to viewing your plan
+                  </button>
+                </p>
+              )}
             </div>
           )
         ) : phase === 'availability' && planData && participantId ? (

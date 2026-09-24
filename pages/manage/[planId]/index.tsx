@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useUser } from '@clerk/nextjs'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
@@ -9,6 +9,7 @@ import ShareLink from '../../../components/ShareLink'
 import PlanStatusControls from '../../../components/PlanStatusControls'
 import ResultsMatrix from '../../../components/ResultsMatrix'
 import StatusBadge from '../../../components/StatusBadge'
+import PickedDay from '../../../components/PickedDay'
 
 interface PlanDate {
   id: string
@@ -77,7 +78,9 @@ export default function ManagePlan() {
   const apiUrl = planId ? `/api/plans/manage?planId=${planId}` : null
   const { data, error, isLoading, mutate } = useSWR<ManageData>(
     isLoaded && isSignedIn && planId ? apiUrl : null,
-    fetcher
+    fetcher,
+    // Keep responses live while people are still crossing off days
+    { refreshInterval: (latest) => (latest?.plan.status === 'active' ? 30000 : 0) }
   )
 
   function handleStatusChanged(newStatus: string) {
@@ -96,6 +99,34 @@ export default function ManagePlan() {
   function handleDataRefresh() {
     mutate()
   }
+
+  const [reopening, setReopening] = useState(false)
+  const [reopenError, setReopenError] = useState<string | null>(null)
+
+  // Un-picks the day and lets people cross off / the organizer pick again
+  async function handleReopen() {
+    if (!planId) return
+    setReopening(true)
+    setReopenError(null)
+    try {
+      const res = await fetch(`/api/plans/manage?planId=${planId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'active' }),
+      })
+      if (res.ok) {
+        await mutate()
+      } else {
+        setReopenError('Couldn’t reopen the plan. Please try again.')
+      }
+    } catch {
+      setReopenError('Network error. Please try again.')
+    } finally {
+      setReopening(false)
+    }
+  }
+
+  const justCreated = router.query.new === '1'
 
   useEffect(() => {
     if (isLoaded && !isSignedIn) {
@@ -120,6 +151,8 @@ export default function ManagePlan() {
   if (!isSignedIn) {
     return null
   }
+
+  const pickedDate = data?.dates.find((d) => d.status === 'locked')
 
   const errorMessage = error
     ? error.message === 'unauthorized'
@@ -167,20 +200,51 @@ export default function ManagePlan() {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <h3 className="section-label">Share link</h3>
-            <ShareLink shareId={data.plan.share_id} />
-          </div>
+          {data.plan.status === 'locked' &&
+            (pickedDate ? (
+              <PickedDay date={pickedDate.date} label="You picked">
+                <p className="mt-4 text-sm text-stone-500">
+                  Everyone with the link can see it&rsquo;s decided.
+                </p>
+                <button onClick={handleReopen} disabled={reopening} className="btn-secondary mt-5 !py-2">
+                  {reopening ? 'Reopening…' : 'Change day'}
+                </button>
+                {reopenError && (
+                  <p className="mt-2 text-xs text-cut-600" role="alert">
+                    {reopenError}
+                  </p>
+                )}
+              </PickedDay>
+            ) : (
+              <div className="card flex flex-wrap items-center justify-between gap-3 p-5">
+                <p className="text-sm text-stone-600">This plan is closed, so nobody can cross off days.</p>
+                <button onClick={handleReopen} disabled={reopening} className="btn-secondary !py-2">
+                  {reopening ? 'Reopening…' : 'Reopen plan'}
+                </button>
+              </div>
+            ))}
+
+          {data.plan.status === 'active' && justCreated && (
+            <div className="rounded-xl border border-pine-200 bg-pine-50 p-4">
+              <p className="text-sm font-semibold text-pine-800">Your plan is ready</p>
+              <p className="mt-1 text-sm text-pine-800/80">
+                Send the link below to your group. As people cross off days, you&rsquo;ll see what&rsquo;s
+                left here.
+              </p>
+            </div>
+          )}
 
           <div className="space-y-2">
-            <h3 className="section-label">Plan controls</h3>
-            <PlanStatusControls
-              planId={data.plan.id}
-              currentStatus={data.plan.status}
-              onStatusChanged={handleStatusChanged}
-              onDataRefresh={handleDataRefresh}
-              editHref={`/manage/${planId}/edit`}
-            />
+            <h3 className="section-label">
+              {data.plan.status === 'active' ? 'Share with your group' : 'Share link'}
+            </h3>
+            <ShareLink shareId={data.plan.share_id} title={data.plan.title} />
+            {data.plan.status === 'active' && (
+              <p className="text-xs text-stone-500">
+                You chose these dates, so you&rsquo;re counted as free on all of them &mdash; no need to
+                fill it in yourself.
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -191,11 +255,23 @@ export default function ManagePlan() {
               dates={data.dates}
               participants={data.participants}
               matrix={data.matrix}
+              editHref={`/manage/${planId}/edit`}
               onDataRefresh={handleDataRefresh}
             />
           </div>
 
-          <div className="border-t border-stone-200 pt-4">
+          <div className="space-y-2 border-t border-stone-200 pt-6">
+            <h3 className="section-label">Plan settings</h3>
+            <PlanStatusControls
+              planId={data.plan.id}
+              currentStatus={data.plan.status}
+              onStatusChanged={handleStatusChanged}
+              onDataRefresh={handleDataRefresh}
+              editHref={`/manage/${planId}/edit`}
+            />
+          </div>
+
+          <div>
             <Link
               href="/dashboard"
               className="text-sm font-medium text-pine-700 transition-colors hover:text-pine-800"

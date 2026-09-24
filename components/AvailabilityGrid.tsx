@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import UndoTimer from './UndoTimer'
-import { getDateParts } from '../lib/format-date'
+import { formatDate, getDateParts } from '../lib/format-date'
 import { UNDO_WINDOW_MS } from '../lib/constants'
 
 interface AvailabilitySummaryDate {
@@ -32,35 +32,62 @@ interface AvailabilityGridProps {
   isDone: boolean
   availabilitySummary: AvailabilitySummaryDate[]
   myAvailability: MyAvailability[]
-  onDataRefresh: () => void
+  onDataRefresh: () => Promise<unknown> | void
 }
 
-function DateTile({
+export function DateTile({
   eliminated,
+  pressed = false,
   children,
 }: {
   eliminated: boolean
+  /** Play the little "pencil pressed into paper" dip (just crossed off by you). */
+  pressed?: boolean
   children: React.ReactNode
 }) {
   return (
     <div
-      className={`flex flex-col rounded-xl border p-2.5 transition-colors duration-150 ${
+      className={`flex flex-col rounded-xl border p-2.5 transition-colors delay-150 duration-300 ${
         eliminated ? 'border-stone-200 bg-stone-50' : 'card'
-      }`}
+      } ${pressed ? 'tile-press' : ''}`}
     >
       {children}
     </div>
   )
 }
 
-function DateHeading({ date, eliminated }: { date: string; eliminated: boolean }) {
+/**
+ * Date label with a hand-drawn red-pencil line across it. The line is always
+ * rendered; toggling `eliminated` draws it in (left to right) or erases it
+ * (right to left) — so crossing off, undo, and other people's changes arriving
+ * on refresh all animate for free. Already-crossed dates render drawn on load.
+ */
+export function DateHeading({ date, eliminated }: { date: string; eliminated: boolean }) {
   const { weekday, monthDay } = getDateParts(date)
+  const ink = `transition-colors delay-100 duration-300 ${eliminated ? 'text-stone-400' : ''}`
   return (
     <div className="mb-1.5 text-center">
-      <p className={`text-sm font-semibold leading-tight ${eliminated ? 'struck' : 'text-ink'}`}>
-        {weekday}
-      </p>
-      <p className={`text-xs ${eliminated ? 'struck' : 'text-stone-500'}`}>{monthDay}</p>
+      <div className="relative inline-block px-1.5">
+        <p className={`text-sm font-semibold leading-tight ${ink} ${eliminated ? '' : 'text-ink'}`}>
+          {weekday}
+        </p>
+        <p className={`text-xs ${ink} ${eliminated ? '' : 'text-stone-500'}`}>{monthDay}</p>
+        <svg
+          viewBox="0 0 100 40"
+          preserveAspectRatio="none"
+          className="pointer-events-none absolute inset-0 h-full w-full overflow-visible"
+          aria-hidden="true"
+        >
+          <path
+            d="M2 29 Q46 21 98 11"
+            pathLength={1}
+            vectorEffect="non-scaling-stroke"
+            className={`pencil-line stroke-cut-500/80 ${eliminated ? 'pencil-line-drawn' : ''}`}
+            strokeWidth="1.75"
+          />
+        </svg>
+      </div>
+      {eliminated && <span className="sr-only">(crossed off)</span>}
     </div>
   )
 }
@@ -139,6 +166,8 @@ export default function AvailabilityGrid({
         const data = await res.json().catch(() => ({}))
         setError(data.error || 'Failed to update. Please try again.')
         setTimeout(() => setError(null), 3000)
+        // The plan may have changed underneath us (e.g. a day was picked) — resync
+        onDataRefresh()
         return
       }
 
@@ -181,10 +210,15 @@ export default function AvailabilityGrid({
     }
   }
 
-  function handleUndoExpired(planDateId: string) {
+  async function handleUndoExpired(planDateId: string) {
     setUndoPending((prev) => prev.filter((u) => u.planDateId !== planDateId))
-    clearOptimistic(planDateId)
-    onDataRefresh()
+    // Fetch the committed state before dropping the optimistic one, otherwise
+    // the pencil line would briefly erase and redraw. Clear it even if the fetch fails.
+    try {
+      await onDataRefresh()
+    } finally {
+      clearOptimistic(planDateId)
+    }
   }
 
   if (planStatus === 'deleted') {
@@ -204,7 +238,7 @@ export default function AvailabilityGrid({
         <h3 className="section-label">Your availability</h3>
         <div className="rounded-xl border border-pine-200 bg-pine-50 p-4" role="alert">
           <p className="text-sm font-medium text-pine-800">
-            This plan is locked &mdash; no more changes allowed.
+            This plan is closed &mdash; no more changes.
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4">
@@ -217,11 +251,11 @@ export default function AvailabilityGrid({
                 <DateHeading date={date.date} eliminated={isEliminated} />
                 <div className="mt-auto">
                   {myStatus === 'unavailable' ? (
-                    <p className="py-1 text-center text-[11px] text-stone-400">You can&rsquo;t do this</p>
+                    <p className="py-1 text-center text-[11px] text-stone-400">You can&rsquo;t</p>
                   ) : isEliminated ? (
-                    <p className="py-1 text-center text-[11px] text-stone-400">Eliminated</p>
+                    <p className="py-1 text-center text-[11px] text-stone-400">Crossed off</p>
                   ) : (
-                    <p className="py-1 text-center text-[11px] font-medium text-pine-600">Available</p>
+                    <p className="py-1 text-center text-[11px] font-medium text-pine-600">Open</p>
                   )}
                 </div>
               </DateTile>
@@ -234,7 +268,12 @@ export default function AvailabilityGrid({
 
   return (
     <div className="space-y-3">
-      <h3 className="section-label">Your availability</h3>
+      <div>
+        <h3 className="section-label">Your availability</h3>
+        {!isDone && (
+          <p className="mt-1 text-sm text-stone-500">Cross off any days you can&rsquo;t make.</p>
+        )}
+      </div>
 
       {error && (
         <p className="rounded-lg border border-cut-200 bg-cut-50 px-3 py-2 text-xs text-cut-700" role="alert">
@@ -254,18 +293,21 @@ export default function AvailabilityGrid({
             isEliminated && othersWhoCant.length > 0 && myStatus !== 'unavailable'
 
           return (
-            <DateTile key={date.planDateId} eliminated={isEliminated}>
+            <DateTile key={date.planDateId} eliminated={isEliminated} pressed={!!undoEntry}>
               <DateHeading date={date.date} eliminated={isEliminated} />
 
               {othersWhoCant.length > 0 && (
-                <p className="mb-1.5 truncate text-center text-[11px] text-stone-400">
+                <p
+                  key={othersWhoCant.map((u) => u.participantId).join()}
+                  className="fade-in mb-1.5 truncate text-center text-[11px] text-stone-400"
+                >
                   {othersWhoCant.map((u) => u.displayName).join(', ')} can&rsquo;t
                 </p>
               )}
 
               <div className="mt-auto">
                 {isLocked ? (
-                  <p className="py-1 text-center text-[11px] text-stone-400">Locked</p>
+                  <p className="py-1 text-center text-[11px] font-medium text-pine-600">Picked</p>
                 ) : undoEntry ? (
                   <UndoTimer
                     deadline={undoEntry.deadline}
@@ -274,18 +316,20 @@ export default function AvailabilityGrid({
                     onUndo={() => handleUndo(date.planDateId, undoEntry.eventLogId)}
                   />
                 ) : myStatus === 'unavailable' ? (
-                  <p className="py-1 text-center text-[11px] text-stone-400">You can&rsquo;t do this</p>
-                ) : eliminatedByOthers ? (
-                  <p className="py-1 text-center text-[11px] text-stone-400">Eliminated</p>
-                ) : isDone ? (
-                  <p className="py-1 text-center text-[11px] font-medium text-pine-600">Available</p>
+                  <p className="py-1 text-center text-[11px] text-stone-400">You can&rsquo;t</p>
+                ) : eliminatedByOthers ? null : isDone ? (
+                  <p className="py-1 text-center text-[11px] font-medium text-pine-600">Open</p>
                 ) : (
                   <button
                     onClick={() => handleToggle(date.planDateId)}
                     disabled={togglingIds.has(date.planDateId)}
-                    className="min-h-[36px] w-full rounded-lg border border-cut-200 bg-white px-2 py-1.5 text-xs font-semibold text-cut-600 transition-colors duration-150 hover:bg-cut-50 disabled:opacity-50"
+                    aria-label={`Cross off ${formatDate(date.date)}`}
+                    className="group flex min-h-[36px] w-full items-center justify-center gap-1.5 rounded-lg border border-stone-300 bg-white px-2 py-1.5 text-xs font-semibold text-ink transition-colors duration-150 hover:border-cut-200 hover:bg-cut-50 hover:text-cut-600 disabled:opacity-50"
                   >
-                    Can&rsquo;t do this
+                    <svg viewBox="0 0 12 12" className="h-3 w-3 text-stone-400 transition-colors group-hover:text-cut-500" aria-hidden="true">
+                      <path d="M1.5 9.5 Q6 6.5 10.5 2.5" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+                    </svg>
+                    Cross off
                   </button>
                 )}
               </div>

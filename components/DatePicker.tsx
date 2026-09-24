@@ -128,7 +128,7 @@ export default function DatePicker({
   // Add candidate dates that aren't already selected, capped at maxDates
   const addDates = useCallback(
     (candidates: string[]) => {
-      const toAdd = candidates.filter((s) => !selectedSet.has(s))
+      const toAdd = candidates.filter((s) => !selectedSet.has(s) && s >= todayStr)
       const remaining = maxDates - selectedDates.length
       const adding = toAdd.slice(0, remaining)
       if (adding.length === 0) return
@@ -136,7 +136,7 @@ export default function DatePicker({
       next.sort()
       onChange(next)
     },
-    [selectedDates, selectedSet, maxDates, onChange]
+    [selectedDates, selectedSet, maxDates, onChange, todayStr]
   )
 
   const toggleDate = useCallback(
@@ -290,7 +290,7 @@ export default function DatePicker({
             } else if (isOtherMonth) {
               colorClasses = 'text-stone-300 hover:bg-stone-50'
             } else if (isPast) {
-              colorClasses = 'text-stone-400 hover:bg-stone-100'
+              colorClasses = 'text-stone-300 cursor-not-allowed'
             } else {
               colorClasses = 'text-ink hover:bg-pine-50'
             }
@@ -309,7 +309,8 @@ export default function DatePicker({
                 onMouseEnter={() => {
                   if (rangeMode && rangeStart) setHoverDate(cell.key)
                 }}
-                disabled={atMax && !isSelected && !rangeMode}
+                // Past days can't be added, but an already-chosen one (editing an older plan) can be removed
+                disabled={(isPast && !isSelected) || (atMax && !isSelected && !rangeMode)}
                 className={`relative flex aspect-square min-h-[44px] cursor-pointer select-none items-center justify-center text-sm font-medium transition-colors duration-150 ${colorClasses}${ringClass}`}
                 aria-label={cell.key + (isSelected ? ' (selected)' : '')}
                 aria-pressed={isSelected}
