@@ -69,40 +69,6 @@
   mask-composite: intersect;
 }
 
-/* Landing hero flip calendar */
-@layer components {
-  .flip-page {
-    transform-origin: top center;
-    backface-visibility: hidden;
-  }
-  .flip-page-away {
-    animation: page-flip 650ms cubic-bezier(0.45, 0.05, 0.55, 0.95) forwards;
-  }
-
-  /* Pencil marks drawn onto a page */
-  .flip-ink {
-    fill: none;
-    stroke-linecap: round;
-    stroke-dasharray: 1 2;
-    stroke-dashoffset: 1;
-    transition: stroke-dashoffset 450ms cubic-bezier(0.3, 0, 0.2, 1);
-  }
-  .flip-ink-drawn {
-    stroke-dashoffset: 0;
-  }
-}
-
-@keyframes page-flip {
-  from {
-    transform: rotateX(0deg);
-    filter: brightness(1);
-  }
-  to {
-    transform: rotateX(100deg);
-    filter: brightness(0.9);
-  }
-}
-
 /* Participant grid: red-pencil line across a crossed-off date */
 @layer components {
   .pencil-line {
@@ -171,7 +137,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .flip-ink,
   .pencil-line {
     transition: none;
   }
