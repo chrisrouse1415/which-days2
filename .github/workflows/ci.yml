@@ -12,15 +12,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
+      - uses: oven-sh/setup-bun@v2
 
-      - run: npm ci
+      - run: bun install --frozen-lockfile
 
       - name: Type check
-        run: npm run type-check
+        run: bun run type-check
 
       - name: Lint
-        run: npm run lint
+        run: bun run lint
+
+      - name: Start local Supabase
+        run: bun run db:start
+
+      - name: Test
+        run: bun test
