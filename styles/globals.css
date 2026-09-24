@@ -155,6 +155,9 @@
 .demo-slow .fade-in {
   animation-duration: 800ms;
 }
+.demo-slow .tile-press {
+  animation-duration: 440ms;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .pencil-line {

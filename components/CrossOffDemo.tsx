@@ -22,26 +22,40 @@ interface DemoState {
   /** Who crossed each day off. Once anyone has, it's gone for everyone, so there's only ever one. */
   crossedOffBy: (string | null)[]
   picked: number | null
+  /** A "Cross off" button being pressed right now, just before its day is crossed off */
+  pressing: number | null
+  /** The day just crossed off, which gets the real app's little tile dip */
+  justCrossed: number | null
   fading: boolean
   /** Bumped each loop so the card remounts fresh (and fades in) instead of rewinding */
   cycle: number
 }
 
-const cant = (i: number, name: string) => (s: DemoState) => ({
+const press = (i: number) => (s: DemoState): DemoState => ({ ...s, pressing: i })
+const cant = (i: number, name: string) => (s: DemoState): DemoState => ({
   ...s,
+  pressing: null,
+  justCrossed: i,
   crossedOffBy: s.crossedOffBy.map((by, j) => (j === i ? name : by)),
 })
 
 // Each loop starts part-way through, with a couple of days already crossed off
-const START = cant(FRI, 'Barney')(
-  cant(THU, 'Herbie')({ crossedOffBy: DATES.map(() => null), picked: null, fading: false, cycle: 0 })
-)
+const START: DemoState = {
+  crossedOffBy: DATES.map((_, i) => (i === THU ? 'Herbie' : i === FRI ? 'Barney' : null)),
+  picked: null,
+  pressing: null,
+  justCrossed: null,
+  fading: false,
+  cycle: 0,
+}
 
 const LOOP_MS = 14000
 
 // [ms from loop start, what happens]
 const SCRIPT: [number, (s: DemoState) => DemoState][] = [
+  [1400, press(SUN)],
   [2000, cant(SUN, 'Giulia')],
+  [3400, press(TUE)],
   [4000, cant(TUE, 'Clare')],
   // Sat and Mon are still open; the organizer picks Saturday
   [6800, (s) => ({ ...s, picked: SAT })],
@@ -118,7 +132,7 @@ export default function CrossOffDemo() {
                 key={date}
                 className={`rounded-xl transition-shadow duration-500 ${picked ? 'shadow-[0_0_0_2px] shadow-pine-500' : ''}`}
               >
-                <DateTile eliminated={!!by}>
+                <DateTile eliminated={!!by} pressed={state.justCrossed === i}>
                   <DateHeading date={date} eliminated={!!by} />
                   {/* One fixed-height line for whatever the tile says, so tiles never change size */}
                   <div className="mt-auto flex h-8 items-center justify-center">
@@ -132,8 +146,17 @@ export default function CrossOffDemo() {
                       // Once a day is picked the plan is closed, so the other open days lose their button
                       <p key="open" className="fade-in text-[11px] font-medium text-pine-600">Open</p>
                     ) : (
-                      <div className="flex h-8 w-full items-center justify-center gap-1 whitespace-nowrap rounded-lg border border-stone-300 bg-white px-1 text-xs font-semibold text-ink">
-                        <svg viewBox="0 0 12 12" className="h-3 w-3 text-stone-400">
+                      <div
+                        className={`flex h-8 w-full items-center justify-center gap-1 whitespace-nowrap rounded-lg border px-1 text-xs font-semibold transition duration-300 ${
+                          state.pressing === i
+                            ? 'scale-95 border-cut-200 bg-cut-50 text-cut-600'
+                            : 'border-stone-300 bg-white text-ink'
+                        }`}
+                      >
+                        <svg
+                          viewBox="0 0 12 12"
+                          className={`h-3 w-3 transition-colors duration-300 ${state.pressing === i ? 'text-cut-500' : 'text-stone-400'}`}
+                        >
                           <path d="M1.5 9.5 Q6 6.5 10.5 2.5" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
                         </svg>
                         Cross off
