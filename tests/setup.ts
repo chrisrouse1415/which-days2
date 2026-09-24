@@ -16,7 +16,11 @@ function readLocalSupabase(): { url: string; key: string } {
   const url = vars.API_URL
   const key = vars.SERVICE_ROLE_KEY || vars.SECRET_KEY
   if (result.exitCode !== 0 || !url || !key) {
-    throw new Error('Local Supabase is not running. Start it with `bun run db:start`, then re-run `bun test`.')
+    throw new Error(
+      'Could not read the local Supabase URL and service key. Start it with `bun run db:start` ' +
+        '(the auth service must be running for keys to be listed), then re-run `bun test`.\n' +
+        `\`supabase status\` said:\n${result.stderr.toString()}${Object.keys(vars).join(', ') || '(no values)'}`
+    )
   }
   return { url, key }
 }
