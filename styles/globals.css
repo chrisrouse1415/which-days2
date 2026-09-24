@@ -136,6 +136,29 @@
   }
 }
 
+/* Landing-page demo: the participant view's own motion, at half speed */
+.demo-slow .pencil-line {
+  transition-duration: 640ms;
+}
+.demo-slow .pencil-line-drawn {
+  transition-duration: 520ms;
+}
+.demo-slow .transition-colors {
+  transition-duration: 600ms;
+}
+.demo-slow .delay-100 {
+  transition-delay: 200ms;
+}
+.demo-slow .delay-150 {
+  transition-delay: 300ms;
+}
+.demo-slow .fade-in {
+  animation-duration: 800ms;
+}
+.demo-slow .tile-press {
+  animation-duration: 440ms;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .pencil-line {
     transition: none;
