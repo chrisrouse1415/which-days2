@@ -6,7 +6,8 @@ import { formatDate } from '../lib/format-date'
  * Landing-page hero: a looping, non-interactive replay of a plan filling in.
  * It reuses the real date tiles and pencil line, so what visitors see here is
  * what they'll get: friends' "can't"s arrive one at a time and cross days off,
- * a couple of days are left open, and the organizer picks one.
+ * a couple of days are left open, and the organizer picks one. Then the card
+ * fades out and a fresh copy fades in, rather than visibly rewinding.
  */
 
 // June 2026: Thursday 11 → Tuesday 16
@@ -17,29 +18,35 @@ interface DemoState {
   /** Who crossed each day off. Once anyone has, it's gone for everyone, so there's only ever one. */
   crossedOffBy: (string | null)[]
   picked: number | null
+  fading: boolean
+  /** Bumped each loop so the card remounts fresh (and fades in) instead of rewinding */
+  cycle: number
 }
-
-const START: DemoState = { crossedOffBy: DATES.map(() => null), picked: null }
 
 const cant = (i: number, name: string) => (s: DemoState) => ({
   ...s,
   crossedOffBy: s.crossedOffBy.map((by, j) => (j === i ? name : by)),
 })
 
+// Each loop starts part-way through, with a couple of days already crossed off
+const START = cant(FRI, 'Barney')(
+  cant(THU, 'Herbie')({ crossedOffBy: DATES.map(() => null), picked: null, fading: false, cycle: 0 })
+)
+
+const LOOP_MS = 7000
+
 // [ms from loop start, what happens]
 const SCRIPT: [number, (s: DemoState) => DemoState][] = [
-  [900, cant(FRI, 'Barney')],
-  [1800, cant(SUN, 'Giulia')],
-  [2700, cant(TUE, 'Clare')],
-  [3600, cant(THU, 'Herbie')],
+  [1000, cant(SUN, 'Giulia')],
+  [2000, cant(TUE, 'Clare')],
   // Sat and Mon are still open; the organizer picks Saturday
-  [5300, (s) => ({ ...s, picked: SAT })],
-  [8800, () => START],
+  [3400, (s) => ({ ...s, picked: SAT })],
+  [6400, (s) => ({ ...s, fading: true })],
+  [LOOP_MS, (s) => ({ ...START, cycle: s.cycle + 1 })],
 ]
-const LOOP_MS = 9600
 
 // What reduced-motion visitors see: the end of the story, standing still
-const FINAL = SCRIPT.slice(0, -1).reduce((s, [, step]) => step(s), START)
+const FINAL = SCRIPT.slice(0, -2).reduce((s, [, step]) => step(s), START)
 
 export default function CrossOffDemo() {
   const [state, setState] = useState<DemoState>(START)
@@ -79,7 +86,12 @@ export default function CrossOffDemo() {
       className="pointer-events-none w-full max-w-[24rem] shrink-0 select-none self-center sm:self-auto"
       aria-hidden="true"
     >
-      <div className="card p-4 shadow-raised sm:p-5">
+      <div
+        key={state.cycle}
+        className={`card fade-in p-4 shadow-raised transition-opacity duration-500 sm:p-5 ${
+          state.fading ? 'opacity-0' : ''
+        }`}
+      >
         <p className="font-display text-lg font-semibold tracking-tight text-ink">Games night</p>
         <p className="text-xs text-stone-500">Organized by Chris</p>
 
