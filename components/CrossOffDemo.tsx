@@ -5,18 +5,18 @@ import { formatDate } from '../lib/format-date'
 /**
  * Landing-page hero: a looping, non-interactive replay of the participant view.
  * It reuses the real date tiles and pencil line, so what visitors see here is
- * what they'll get: you cross off the days you can't make, everyone else's "can't"s arrive, the open days narrow down, and the organizer
- * picks the one that's left.
+ * what they'll get: you cross off the days you can't make, everyone else's
+ * "can't"s arrive, the open days narrow down, and the organizer picks the one
+ * that's left.
  */
 
 // June 2026: Thursday 11 → Tuesday 16
 const DATES = ['2026-06-11', '2026-06-12', '2026-06-13', '2026-06-14', '2026-06-15', '2026-06-16']
 const [THU, FRI, SAT, SUN, MON, TUE] = [0, 1, 2, 3, 4, 5]
 
-type Mine = 'open' | 'cant'
 interface DayState {
-  mine: Mine
-  others: string[]
+  /** Who crossed this day off. Once anyone has, it's gone for everyone, so there's only ever one. */
+  crossedOffBy: 'you' | string | null
 }
 interface DemoState {
   days: DayState[]
@@ -28,7 +28,7 @@ interface DemoState {
 }
 
 const START: DemoState = {
-  days: DATES.map(() => ({ mine: 'open', others: [] })),
+  days: DATES.map(() => ({ crossedOffBy: null })),
   cursor: 'off',
   tapping: false,
   pressed: null,
@@ -39,10 +39,9 @@ const setDay = (s: DemoState, i: number, patch: Partial<DayState>): DemoState =>
   ...s,
   days: s.days.map((d, j) => (j === i ? { ...d, ...patch } : d)),
 })
-const addOther = (i: number, name: string) => (s: DemoState) =>
-  setDay(s, i, { others: [...s.days[i].others, name] })
+const othersCant = (i: number, name: string) => (s: DemoState) => setDay(s, i, { crossedOffBy: name })
 const crossOff = (i: number) => (s: DemoState) =>
-  setDay({ ...s, tapping: false, pressed: i }, i, { mine: 'cant' })
+  setDay({ ...s, tapping: false, pressed: i }, i, { crossedOffBy: 'you' })
 
 // [ms from loop start, what happens]
 const SCRIPT: [number, (s: DemoState) => DemoState][] = [
@@ -53,19 +52,16 @@ const SCRIPT: [number, (s: DemoState) => DemoState][] = [
   [2750, (s) => ({ ...s, tapping: true })],
   [2900, crossOff(SUN)],
   [3400, (s) => ({ ...s, cursor: 'rest' })],
-  [4000, addOther(FRI, 'Sam')],
-  [4800, addOther(TUE, 'Priya')],
-  [5600, addOther(MON, 'Sam')],
-  [6300, addOther(FRI, 'Priya')],
-  [7300, (s) => ({ ...s, picked: SAT })],
-  [10800, () => START],
+  [4000, othersCant(FRI, 'Sam')],
+  [4800, othersCant(TUE, 'Priya')],
+  [5600, othersCant(MON, 'Sam')],
+  [6600, (s) => ({ ...s, picked: SAT })],
+  [10100, () => START],
 ]
-const LOOP_MS = 11600
+const LOOP_MS = 10900
 
 // What reduced-motion visitors see: the end of the story, standing still
 const FINAL = SCRIPT.slice(0, -1).reduce((s, [, step]) => step(s), START)
-
-const isCrossedOff = (d: DayState) => d.mine !== 'open' || d.others.length > 0
 
 function Cursor({ tapping }: { tapping: boolean }) {
   return (
@@ -128,7 +124,7 @@ export default function CrossOffDemo() {
     }
   }, [state.cursor])
 
-  const open = state.days.map((d, i) => ({ d, i })).filter(({ d }) => !isCrossedOff(d))
+  const open = state.days.map((d, i) => ({ d, i })).filter(({ d }) => !d.crossedOffBy)
 
   return (
     <div
@@ -137,17 +133,15 @@ export default function CrossOffDemo() {
       aria-hidden="true"
     >
       <div className="card p-4 shadow-raised sm:p-5">
-        <p className="font-display text-lg font-semibold tracking-tight text-ink">Team dinner</p>
-        <p className="text-xs text-stone-500">
-          Organized by Alex &middot; Joined as <span className="font-semibold text-ink">You</span>
-        </p>
+        <p className="font-display text-lg font-semibold tracking-tight text-ink">Games night</p>
+        <p className="text-xs text-stone-500">Organized by Alex</p>
 
         <p className="section-label mt-4">Your availability</p>
-        <p className="mt-1 text-xs text-stone-500">Cross off any days you can&rsquo;t make.</p>
 
         <div className="mt-3 grid grid-cols-3 gap-2">
           {state.days.map((day, i) => {
-            const crossedOff = isCrossedOff(day)
+            const crossedOff = day.crossedOffBy !== null
+            const byOther = crossedOff && day.crossedOffBy !== 'you'
             const picked = state.picked === i
             return (
               <div
@@ -156,15 +150,15 @@ export default function CrossOffDemo() {
               >
                 <DateTile eliminated={crossedOff} pressed={state.pressed === i}>
                   <DateHeading date={DATES[i]} eliminated={crossedOff} />
-                  {day.others.length > 0 && (
-                    <p key={day.others.join()} className="fade-in mb-1.5 truncate text-center text-[11px] text-stone-400">
-                      {day.others.join(', ')} can&rsquo;t
+                  {byOther && (
+                    <p className="fade-in mb-1.5 truncate text-center text-[11px] text-stone-400">
+                      {day.crossedOffBy} can&rsquo;t
                     </p>
                   )}
                   <div className="mt-auto">
                     {picked ? (
                       <p className="fade-in py-1 text-center text-[11px] font-medium text-pine-600">Picked</p>
-                    ) : day.mine === 'cant' ? (
+                    ) : day.crossedOffBy === 'you' ? (
                       <p className="py-1 text-center text-[11px] text-stone-400">You can&rsquo;t</p>
                     ) : crossedOff ? null : (
                       <div
