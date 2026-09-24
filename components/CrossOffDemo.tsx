@@ -6,8 +6,7 @@ import { formatDate } from '../lib/format-date'
  * Landing-page hero: a looping, non-interactive replay of the participant view.
  * It reuses the real date tiles and pencil line, so what visitors see here is
  * what they'll get: you cross off the days you can't make, everyone else's
- * "can't"s arrive, the open days narrow down, and the organizer picks the one
- * that's left.
+ * "can't"s arrive, a couple of days are left open, and the organizer picks one.
  */
 
 // June 2026: Thursday 11 → Tuesday 16
@@ -54,11 +53,10 @@ const SCRIPT: [number, (s: DemoState) => DemoState][] = [
   [3400, (s) => ({ ...s, cursor: 'rest' })],
   [4000, othersCant(FRI, 'Sam')],
   [4800, othersCant(TUE, 'Priya')],
-  [5600, othersCant(MON, 'Sam')],
-  [6600, (s) => ({ ...s, picked: SAT })],
-  [10100, () => START],
+  [6400, (s) => ({ ...s, picked: SAT })],
+  [9900, () => START],
 ]
-const LOOP_MS = 10900
+const LOOP_MS = 10700
 
 // What reduced-motion visitors see: the end of the story, standing still
 const FINAL = SCRIPT.slice(0, -1).reduce((s, [, step]) => step(s), START)
@@ -160,7 +158,10 @@ export default function CrossOffDemo() {
                       <p className="fade-in py-1 text-center text-[11px] font-medium text-pine-600">Picked</p>
                     ) : day.crossedOffBy === 'you' ? (
                       <p className="py-1 text-center text-[11px] text-stone-400">You can&rsquo;t</p>
-                    ) : crossedOff ? null : (
+                    ) : crossedOff ? null : state.picked !== null ? (
+                      // Once a day is picked the plan is closed, so the other open days lose their button
+                      <p className="fade-in py-1 text-center text-[11px] font-medium text-pine-600">Open</p>
+                    ) : (
                       <div
                         ref={(el) => {
                           buttonRefs.current[i] = el
