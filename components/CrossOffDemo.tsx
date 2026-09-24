@@ -54,9 +54,9 @@ const LOOP_MS = 14000
 
 // [ms from loop start, what happens]
 const SCRIPT: [number, (s: DemoState) => DemoState][] = [
-  [1400, press(SUN)],
+  [1100, press(SUN)],
   [2000, cant(SUN, 'Giulia')],
-  [3400, press(TUE)],
+  [3100, press(TUE)],
   [4000, cant(TUE, 'Clare')],
   // Sat and Mon are still open; the organizer picks Saturday
   [6800, (s) => ({ ...s, picked: SAT })],
@@ -135,34 +135,49 @@ export default function CrossOffDemo() {
                 >
                   <DateTile eliminated={!!by} pressed={state.justCrossed === i}>
                     <DateHeading date={date} eliminated={!!by} />
-                    {/* One fixed-height line for whatever the tile says, so tiles never change size */}
-                    <div className="mt-auto flex h-8 items-center justify-center">
-                      {by ? (
-                        <p key="by" className="fade-in truncate text-[11px] text-stone-400">
-                          {by} can&rsquo;t
-                        </p>
-                      ) : picked ? (
-                        <p key="picked" className="fade-in text-[11px] font-medium text-pine-600">Picked</p>
-                      ) : state.picked !== null ? (
-                        // Once a day is picked the plan is closed, so the other open days lose their button
-                        <p key="open" className="fade-in text-[11px] font-medium text-pine-600">Open</p>
-                      ) : (
-                        <div
-                          className={`flex h-8 w-full items-center justify-center gap-1 whitespace-nowrap rounded-lg border px-1 text-xs font-semibold transition duration-300 ${
-                            state.pressing === i
-                              ? 'scale-95 border-cut-200 bg-cut-50 text-cut-600'
-                              : 'border-stone-300 bg-white text-ink'
+                    {/*
+                      One fixed-height line for whatever the tile says, so tiles never change size.
+                      Everything stays mounted and cross-fades: when a day is crossed off the
+                      button lets go and fades out while the pencil line draws, then the name
+                      fades in. Days left open when another is picked are left exactly as they were.
+                    */}
+                    <div className="relative mt-auto h-8">
+                      <div
+                        className={`absolute inset-0 flex items-center justify-center gap-1 whitespace-nowrap rounded-lg border px-1 text-xs font-semibold transition duration-500 ${
+                          state.pressing === i ? 'scale-95' : ''
+                        } ${
+                          state.pressing === i || by
+                            ? 'border-cut-200 bg-cut-50 text-cut-600'
+                            : 'border-stone-300 bg-white text-ink'
+                        } ${by || picked ? 'opacity-0' : ''}`}
+                        style={{ transitionDelay: by || picked ? '250ms' : '0ms' }}
+                      >
+                        <svg
+                          viewBox="0 0 12 12"
+                          className={`h-3 w-3 transition-colors duration-500 ${
+                            state.pressing === i || by ? 'text-cut-500' : 'text-stone-400'
                           }`}
                         >
-                          <svg
-                            viewBox="0 0 12 12"
-                            className={`h-3 w-3 transition-colors duration-300 ${state.pressing === i ? 'text-cut-500' : 'text-stone-400'}`}
-                          >
-                            <path d="M1.5 9.5 Q6 6.5 10.5 2.5" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
-                          </svg>
-                          Cross off
-                        </div>
-                      )}
+                          <path d="M1.5 9.5 Q6 6.5 10.5 2.5" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+                        </svg>
+                        Cross off
+                      </div>
+                      <p
+                        className={`absolute inset-0 flex items-center justify-center truncate text-[11px] text-stone-400 transition-opacity duration-700 ${
+                          by ? '' : 'opacity-0'
+                        }`}
+                        style={{ transitionDelay: by ? '500ms' : '0ms' }}
+                      >
+                        {by} can&rsquo;t
+                      </p>
+                      <p
+                        className={`absolute inset-0 flex items-center justify-center text-[11px] font-medium text-pine-600 transition-opacity duration-700 ${
+                          picked ? '' : 'opacity-0'
+                        }`}
+                        style={{ transitionDelay: picked ? '500ms' : '0ms' }}
+                      >
+                        Picked
+                      </p>
                     </div>
                   </DateTile>
                 </div>
