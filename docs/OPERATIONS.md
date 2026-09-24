@@ -53,8 +53,8 @@ To adjust the limit, edit `lib/rate-limit.ts` and change the `slidingWindow()` p
 ## CI
 
 GitHub Actions runs on push to `main` and on PRs:
-1. `npm run type-check` (TypeScript)
-2. `npm run lint` (ESLint via Next.js)
+1. `bun run type-check` (TypeScript)
+2. `bun run lint` (ESLint via Next.js)
 
 ## Common Issues
 
